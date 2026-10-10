@@ -1,12 +1,72 @@
-# dsh-plugin-boot-whale-maid · 鲸鱼厨娘 · 启动舞台
+# 🐋 DSH 鲸鱼厨娘开机动画插件 · Whale Maid Boot
 
-给 DeepSeek Harness 的开机出场动画：启动时全屏「鲸鱼厨娘」舞台式登场，播完整体渐出露出真实界面。
+深海起幕，鲸鱼厨娘登场。
+
+Whale Maid Boot 是一款为 DSH 制作的鲸鱼女仆开机动画插件，
+将每一次启动，化作一场优雅的舞台迎接。
+
+帷幕缓缓展开，深海蓝的宫殿在微光中显现。鲸鱼厨娘从容步入
+舞台，暖金色的光掠过衣角，「深海女仆工坊」随之浮现。
+成熟御姐的沉静与主场感，搭配 Q 版小助手的一点俏皮，
+让打开 DSH 的几秒钟也有值得停留的风景。
+
+舞台渐隐，工作空间自然展开；点击画面或按 Esc，即可随时跳过。
+
+> **An elegant whale maid startup animation plugin for DSH,**
+> featuring a deep-sea palace, theatrical curtains, and warm golden
+> accents. Click anywhere or press Esc to skip.
+
+---
+
+## 效果预览 · Preview
+
+> ⚠️ **以下为占位素材（本插件自制 SVG 占位块）的动作预览，不是真实立绘效果。**
+> 真实立绘（maid-atelier 皮肤）需在装好皮肤并启用后由 DSH 实机渲染，本仓库不含任何立绘字节。
+> 三张截图由真实 Chromium（Chrome 155）在 1600×900 下按**动画自身时间轴**抓取，
+> 逐帧状态日志见 [`screenshots/shot-log.json`](screenshots/shot-log.json)。
+
+| 3.0s · 角色入场（标题尚未出现） | 4.5s · 标题完整 | 5.3s · 完整稳定舞台 |
+|---|---|---|
+| ![maids entering](screenshots/stage-01-maids-entering-3.0s.png) | ![title complete](screenshots/stage-02-title-complete-4.5s.png) | ![stable stage](screenshots/stage-03-stable-stage-5.3s.png) |
+
+时间线：`0.0s 起幕` → `0.5–1.8s 幕布打开` → `1.8–3.2s 人物入场` → `3.2–4.4s 标题浮现` →
+`4.4–5.6s 粒子与鲸尾` → `5.6–6.4s 整体渐出`。任意时刻点击或按 Esc 在 150 ms 内跳过。
+
+---
+
+## 下载与安装 · Install
+
+**最新版本：[v0.1.0](https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid/releases/tag/v0.1.0)**
+· **[⬇️ 下载 dsh-plugin-boot-whale-maid-0.1.0.tgz](https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid/releases/download/v0.1.0/dsh-plugin-boot-whale-maid-0.1.0.tgz)**
+（138,456 字节 · SHA256 `15A1906BEFBF9236ED361A645D5DD58F93F419884C60F76C09AA8EE2520605D0`）
+
+```bash
+# 从 Release 下载后安装
+dsh plugin --profile <你的profile> add ./dsh-plugin-boot-whale-maid-0.1.0.tgz
+
+# 或从本仓库源码目录安装
+dsh plugin --profile <你的profile> add ./dsh-plugin-boot-whale-maid
+```
+
+安装后**完全重启** DSH 生效。卸载/回滚见 §2。
+
+**素材依赖**：立绘**不在本包内**，动画通过同源路由 `/skin-assets/maid-atelier/<sha256>.webp`
+引用 [maid-atelier 皮肤插件](https://www.npmjs.com/package/@smalltailqwq/dsh-client-ui-skin-maid-atelier) 注册的美术资源。
+皮肤未安装/未启用时该路由 404，插件自动降级为纯文字/极简幕，**不影响启动**。
+
+**署名与许可**：素材署名链 上善 → ZipZipPipe → Small-tailqwq，许可 **CC BY-NC-SA 4.0**；
+本插件代码为 **MIT**。详见 [LICENSE](LICENSE) 与 [docs/ATTRIBUTION.md](docs/ATTRIBUTION.md)。
+
+---
+
+### 这个插件做了什么
 
 - **单包双面**：宿主半边（`lib/index.js`）在**文档解析期**同步注入一层纯 CSS 底幕，抢在 DSH 自己的原生加载卡（`[data-dsh-boot]`）被绘制之前就把它盖住；客户端半边（`lib/client.js`）随后在**自己的 shadow root** 里挂载舞台并播放 8 段式时间线，播完调用宿主的幂等收尾钩子把底幕交还。
 - **可跳过**：画面出现后，**点击任意位置或按 `Esc`** 都在 150 ms 内退场。宿主脚本在首帧阶段就自己监听了 click / Escape（capture 阶段），所以**即使客户端脚本还没加载完也能跳过**。
 - **不遮蔽真实界面**：底幕与舞台都是 `pointer-events:none` 的纯展示层，不吞点击、不锁滚动；退场后不留任何节点。
 - **零运行期依赖**：两个半边都**不含任何 `import` 语句**，不拉第三方包、不发 `fetch`/XHR、不引用任何本地图片路径。
 - **素材只按 URL 引用**：立绘全部走原包注册的同源路由 `/skin-assets/maid-atelier/<hash>.webp`，本包**不复制、不内联、不二次分发**任何素材字节。
+- **与 dsh-550c-boot 互斥**：检测到 550c 已接管启动画面时主动让步（早到与晚到均让位）。
 
 ---
 
