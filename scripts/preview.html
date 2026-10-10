@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>深海女仆工坊 · 出场动画预览 — dsh-plugin-boot-whale-maid</title>
+<style>
+    :root {
+        --ink: #f2ece0;
+        --gold: #c8ad73;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: #0a1524;
+        color: var(--ink);
+        font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 20px 64px; }
+    h1 { font-size: 20px; font-weight: 600; letter-spacing: .04em; margin: 0 0 4px; }
+    h2 { font-size: 15px; font-weight: 600; color: var(--gold); margin: 26px 0 8px; letter-spacing: .04em; }
+    p, li { color: #cdd8e4; }
+    code { background: #14263a; padding: 1px 5px; border-radius: 3px; font-size: 12.5px; color: #e7dcc4; }
+    .banner {
+        border-left: 3px solid var(--gold);
+        background: #10203a;
+        padding: 12px 14px;
+        margin: 16px 0 8px;
+        border-radius: 3px;
+    }
+    .banner strong { color: var(--gold); }
+    ol, ul { padding-left: 22px; }
+    .panel { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 18px 0 6px; }
+    button {
+        font: inherit;
+        padding: 7px 16px;
+        border-radius: 3px;
+        border: 1px solid #3d6c7a;
+        background: #123248;
+        color: var(--ink);
+        cursor: pointer;
+    }
+    button:hover { border-color: var(--gold); }
+    button:disabled { opacity: .45; cursor: default; border-color: #2b4356; }
+    #status { color: #8fa6bb; font-size: 13px; margin-left: 4px; }
+    .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .card { background: #0e1c30; border: 1px solid #1f3448; border-radius: 4px; padding: 14px 16px; }
+    .card h3 { margin: 0 0 6px; font-size: 13.5px; color: var(--gold); letter-spacing: .04em; }
+    .note { font-size: 12.5px; color: #8fa6bb; }
+    a { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>深海女仆工坊 · DSH 开屏出场动画预览</h1>
+    <p class="note">dsh-plugin-boot-whale-maid / scripts/preview.html —— 本页只做动画与构图检查，不安装任何插件。</p>
+
+    <div class="banner">
+        <strong>【动作预览，非真实立绘效果】</strong>
+        独立动作预览用的是本插件自制的 SVG 占位图形，只表达主立绘、Q 版与宫殿的
+        <em>体量与位置</em>，因此能看完整构图、幕布、标题、灯光、时间线与跳过行为，
+        <strong>看不到真实立绘</strong>。真实素材必须在实际提供
+        <code>/skin-assets/maid-atelier/</code> 的同源环境（已启用 maid-atelier 皮肤插件的 DSH）里验收。
+    </div>
+
+    <div class="panel">
+        <button id="replay" type="button">重播</button>
+        <button id="skip" type="button">跳过</button>
+        <button id="reduced" type="button" aria-pressed="false">切换 reduced-motion 分支</button>
+        <span id="status">正在读取 lib/client.js …</span>
+    </div>
+
+    <h2>两种验收模式</h2>
+    <div class="cols">
+        <div class="card">
+            <h3>模式 1 · 独立动作预览（默认，现在就是）</h3>
+            <p>直接双击本文件（<code>file://</code>）即自动播放，用 SVG 占位图形播放完整时间线。</p>
+            <p class="note">本模式<strong>不发任何图片请求</strong>：占位图形以 <code>data:</code> URI 内联，绝不复制、也绝不重新托管原包素材。
+            需要浏览器允许以 <code>file://</code> 读取同目录脚本；若被策略拦下，请用任意本地静态服务器打开本文件
+            （静态服务器只提供本页与 <code>lib/client.js</code>，它<strong>不会</strong>让
+            <code>/skin-assets/maid-atelier/</code> 存在）。</p>
+        </div>
+        <div class="card">
+            <h3>模式 2 · 真实素材验收</h3>
+            <p>只有在真正提供该素材路由的同源环境里才有意义，例如已安装并启用 maid-atelier 皮肤插件的 DSH：
+            打开 <code>http://127.0.0.1:19387/skin-assets/maid-atelier/&lt;hash&gt;.webp</code> 应返回图片。</p>
+            <p class="note">普通静态服务器不等于素材路由存在。仅当路由返回 404 时，动画进入 ≤1s 的降级幕 —— 这是预期分支，不是错误。</p>
+        </div>
+    </div>
+
+    <h2>页面内可核对的验收点</h2>
+    <ul>
+        <li>时间线：0.0 起幕 / 0.5 开幕布 / 1.8 主立绘 / 2.05 右 Q 版 / 3.2 标题 / 4.4 光点·鲸尾 / 5.6 渐出 / 6.4 结束。</li>
+        <li>跳过：画面出现后，点击任意位置或按 <code>Esc</code> 都在 150ms 内退场（与正式客户端同一套逻辑）。</li>
+        <li>隔离：舞台全部在 <code>.dsh-whale-maid-boot-host</code> 的 shadow root 内，本页样式不受影响。</li>
+    </ul>
+</div>
+
+<script>
+/**
+ * file:// preview adapter — it does NOT re-implement the animation.
+ *
+ * Only three things happen here:
+ *   1. lib/client.js is read and its module plumbing (import / export / bare
+ *      `document` / `window`) is rewritten so the very same source can be
+ *      evaluated as a classic script (file:// blocks ES module imports);
+ *   2. five hand-drawn SVG stand-ins are handed to the exported hook
+ *      `options.swap`, which is the single point where the client chooses every
+ *      artwork URL — so the stage, the probe and the palace background all use
+ *      the stand-ins and no image is ever requested;
+ *   3. the real exported `createBootShow` runs the timeline.
+ *
+ * Every timing, easing, segment, skip and cleanup decision still comes from that
+ * one source file. Two gates must pass or the page yields to a note instead of
+ * throwing:
+ *   a. every rewrite anchor must occur exactly once in the source;
+ *   b. the result must actually define createBootShow / apply and expose the
+ *      expected BOOT_ASSETS table.
+ */
+(function () {
+    'use strict';
+
+    var STATUS = document.getElementById('status');
+    var CLIENT_URL = '../lib/client.js';
+
+    function setStatus(text) { STATUS.textContent = text; }
+
+    /* ---- self-made SVG stand-ins (no artwork is ever copied) ------------ */
+
+    function svgUri(inner, width, height) {
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '">'
+            + '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
+            + '<stop offset="0" stop-color="#3d6c7a"/><stop offset="1" stop-color="#123248"/>'
+            + '</linearGradient></defs>'
+            + inner
+            + '</svg>';
+        return 'data:image/svg+xml,' + encodeURIComponent(svg);
+    }
+
+    function maidStandIn(width, height, label) {
+        var inner = ''
+            + '<rect width="' + width + '" height="' + height + '" fill="url(#g)"/>'
+            + '<circle cx="' + Math.round(width / 2) + '" cy="' + Math.round(height * 0.13)
+            + '" r="' + Math.round(width * 0.30) + '" fill="#1b3a52" stroke="#c8ad73" stroke-width="3"/>'
+            + '<path d="M' + Math.round(width * 0.16) + ' ' + Math.round(height * 0.92)
+            + ' C' + Math.round(width * 0.20) + ' ' + Math.round(height * 0.34)
+            + ' ' + Math.round(width * 0.80) + ' ' + Math.round(height * 0.34)
+            + ' ' + Math.round(width * 0.84) + ' ' + Math.round(height * 0.92) + ' Z"'
+            + ' fill="#16304a" stroke="#c8ad73" stroke-width="3"/>'
+            + '<text x="' + Math.round(width / 2) + '" y="' + Math.round(height * 0.99)
+            + '" fill="#f2ece0" font-family="sans-serif" font-size="30" text-anchor="middle">'
+            + label + '</text>';
+        return svgUri(inner, width, height);
+    }
+
+    function chibiStandIn(width, height) {
+        var inner = ''
+            + '<circle cx="' + Math.round(width / 2) + '" cy="' + Math.round(height * 0.34)
+            + '" r="' + Math.round(height * 0.30) + '" fill="#1b3a52" stroke="#c8ad73" stroke-width="4"/>'
+            + '<path d="M' + Math.round(width * 0.18) + ' ' + height
+            + ' C' + Math.round(width * 0.22) + ' ' + Math.round(height * 0.62)
+            + ' ' + Math.round(width * 0.78) + ' ' + Math.round(height * 0.62)
+            + ' ' + Math.round(width * 0.82) + ' ' + height + ' Z"'
+            + ' fill="#16304a" stroke="#c8ad73" stroke-width="4"/>'
+            + '<text x="' + Math.round(width / 2) + '" y="' + (height - 14)
+            + '" fill="#f2ece0" font-family="sans-serif" font-size="34" text-anchor="middle">Q</text>';
+        return svgUri(inner, width, height);
+    }
+
+    function palaceStandIn() {
+        var inner = ''
+            + '<rect width="1586" height="992" fill="#0d1f33"/>'
+            + '<g fill="#16304a" stroke="#c8ad73" stroke-width="3" opacity="0.9">'
+            + '<rect x="120" y="300" width="180" height="692" rx="90"/>'
+            + '<rect x="420" y="220" width="220" height="772" rx="110"/>'
+            + '<rect x="760" y="280" width="200" height="712" rx="100"/>'
+            + '<rect x="1090" y="240" width="210" height="752" rx="105"/>'
+            + '</g>'
+            + '<rect x="0" y="880" width="1586" height="112" fill="#0a1726"/>'
+            + '<text x="793" y="470" fill="#f2ece0" font-family="sans-serif" font-size="44"'
+            + ' text-anchor="middle" opacity="0.75">PALACE PLACEHOLDER（本插件自制占位）</text>';
+        return svgUri(inner, 1586, 992);
+    }
+
+    /* ---- source rewrite ------------------------------------------------- */
+
+    var REWRITES = [
+        { find: "import { BOOT_ASSETS, BOOT_SEGMENTS, STAGE_CONFIG, apply, createBootShow } from '../lib/client.js';",
+          replace: '', required: false },
+        { find: 'export function createBootShow(options) {',
+          replace: 'function createBootShow(options) {' },
+        { find: 'export function apply(ctx) {',
+          replace: 'function apply(ctx) {' },
+    ];
+
+    /** Every `export const NAME` in lib/client.js, rewritten to plain vars. */
+    var EXPORTED_CONSTS = ['inject', 'BOOT_ASSETS', 'STAGE_CONFIG', 'BOOT_SEGMENTS'];
+
+    function rewrite(source) {
+        var body = source;
+        for (var i = 0; i < REWRITES.length; i += 1) {
+            var rule = REWRITES[i];
+            var parts = body.split(rule.find);
+            if (parts.length === 1) {
+                if (rule.required !== false) return { error: '缺少重写锚点：' + rule.find.slice(0, 48) };
+                continue;
+            }
+            if (parts.length > 2) return { error: '重写锚点出现多次：' + rule.find.slice(0, 48) };
+            body = parts.join(rule.replace);
+        }
+        for (var j = 0; j < EXPORTED_CONSTS.length; j += 1) {
+            var name = EXPORTED_CONSTS[j];
+            var find = 'export const ' + name + ' =';
+            var count = body.split(find).length - 1;
+            if (count !== 1) return { error: '导出常量锚点异常：' + name + ' x' + count };
+            body = body.replace(find, 'var ' + name + ' =');
+        }
+        // Any remaining `export` means the page would silently drop a binding.
+        if (/(^|\n)export\b/.test(body)) return { error: '仍有未处理的 export' };
+        body = body.replace(/^export /gm, '');
+        body = body.replace(/\bwindow\./g, 'win.').replace(/\bdocument\./g, 'doc.');
+        if (body.indexOf('doc.createElement') === -1 || body.indexOf('win.') === -1) {
+            return { error: '重写后没有出现预期的 doc./win. 用法' };
+        }
+        if (/\breturndoc\./.test(body) || body.indexOf('opts.doc.') !== -1) {
+            return { error: '重写产生了可疑的标识符' };
+        }
+        var adapter = '(function () {\n'
+            + "'use strict';\n"
+            + 'var _ph = { "maid-left": null, "maid-right": null, "chibi": null, "palace-light": null, "palace-dark": null };\n'
+            + 'function swap(url, role) {\n'
+            + '    if (!url) return url;\n'
+            + '    if (role && _ph[role]) return _ph[role];\n'
+            + '    return url;\n'
+            + '}\n'
+            + 'var __api = (function (doc, win) {\n'
+            + body
+            + '\nreturn { apply: apply, createBootShow: createBootShow, BOOT_ASSETS: BOOT_ASSETS, BOOT_SEGMENTS: BOOT_SEGMENTS, STAGE_CONFIG: STAGE_CONFIG, swap: swap };\n'
+            + '})(document, window);\n'
+            + '__api.setPlaceholders = function (p) {\n'
+            + "    if (p && typeof p === 'object') {\n"
+            + '        _ph[\'maid-left\'] = p.left || null;\n'
+            + '        _ph[\'maid-right\'] = p.right || null;\n'
+            + '        _ph.chibi = p.chibi || null;\n'
+            + '        _ph[\'palace-light\'] = p.palace || null;\n'
+            + '        _ph[\'palace-dark\'] = p.palace || null;\n'
+            + '    }\n'
+            + '};\n'
+            + 'return __api;\n'
+            + '})()';
+        return { source: adapter };
+    }
+
+    function backupNote(message) {
+        var host = document.createElement('div');
+        host.className = 'dsh-whale-maid-boot-host preview-note';
+        host.style.cssText = 'position:fixed;left:0;right:0;bottom:0;padding:10px 14px;'
+            + 'background:#061421;color:#c8ad73;font:12px/1.5 sans-serif;z-index:2147483001;'
+            + 'border-top:1px solid #3d6c7a';
+        host.textContent = message;
+        document.body.appendChild(host);
+    }
+
+    function start() {
+        var url = new URL(CLIENT_URL, document.baseURI).href;
+        setStatus('正在读取 lib/client.js …');
+        fetch(url)
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.text();
+            })
+            .then(function (source) {
+                var out = rewrite(source);
+                if (out.error) throw new Error(out.error);
+                var api = (0, eval)(out.source); // eslint-disable-line no-eval
+                if (!api || typeof api.createBootShow !== 'function' || typeof api.apply !== 'function') {
+                    throw new Error('适配器没有产出预期的导出');
+                }
+                var keys = Object.keys(api.BOOT_ASSETS || {});
+                if (keys.length !== 6) throw new Error('BOOT_ASSETS 不符（' + keys.length + ' 项）');
+                boot(api);
+            })
+            .catch(function (err) {
+                backupNote('预览无法读取 ../lib/client.js（' + err.message + '）。'
+                    + '请用本地静态服务器打开本页，或在允许 file:// 读取同目录脚本的浏览器里双击打开。'
+                    + '正式开机舞台不受影响。');
+                setStatus('离线：' + err.message);
+            });
+    }
+
+    function boot(api) {
+        var replayBtn = document.getElementById('replay');
+        var skipBtn = document.getElementById('skip');
+        var reducedBtn = document.getElementById('reduced');
+        var current = null;
+        var reduced = false;
+        var round = 0;
+
+        // The host half owns this class in a real DSH boot; the preview
+        // simulates it so the client's own teardown path is exercised too.
+        api.setPlaceholders({
+            left: maidStandIn(1122, 2019, '主立绘占位'),
+            right: maidStandIn(1077, 2048, '右立绘占位'),
+            chibi: chibiStandIn(620, 553),
+            palace: palaceStandIn(),
+        });
+
+        function run() {
+            round += 1;
+            if (current && typeof current.dispose === 'function') {
+                try { current.dispose(); } catch (e) { /* ignore */ }
+            }
+            document.documentElement.className = 'dsh-whale-maid-first';
+            current = api.createBootShow({
+                document: document,
+                window: window,
+                assets: api.BOOT_ASSETS,
+                reducedMotion: reduced,
+                swap: api.swap,
+            });
+            replayBtn.disabled = true;
+            skipBtn.disabled = !(current && typeof current.finish === 'function');
+            setStatus((reduced ? 'reduced-motion 分支' : '动作预览（SVG 占位）')
+                + ' 第 ' + round + ' 轮播放中 · 点击画面或按 Esc 可跳过');
+            window.setTimeout(function () {
+                if (!current) return;
+                replayBtn.disabled = false;
+                setStatus((reduced ? 'reduced-motion 分支' : '动作预览（SVG 占位）')
+                    + ' 第 ' + round + ' 轮已结束（' + current.state + '）· 可点「重播」');
+            }, 7500);
+        }
+
+        replayBtn.addEventListener('click', run);
+        skipBtn.addEventListener('click', function () {
+            if (current && typeof current.finish === 'function') current.finish('preview-skip');
+        });
+        reducedBtn.addEventListener('click', function () {
+            reduced = !reduced;
+            reducedBtn.setAttribute('aria-pressed', reduced ? 'true' : 'false');
+            run();
+        });
+        replayBtn.disabled = false;
+        run();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+    } else {
+        start();
+    }
+})();
+</script>
+</body>
+</html>

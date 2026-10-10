@@ -1,0 +1,36 @@
+# Bundle patch for dsh-plugin-boot-whale-maid.
+#
+# A bundle patch is a top-level YAML array of loader patch entries. `insert`
+# mounts one plugin row into the composed profile tree; `name` must be exactly
+# the Node-resolvable package name from package.json, quoted because `-` leads a
+# plain scalar into YAML indicator territory.
+#
+# This row is what makes the package a PROFILE LAYER rather than an inert
+# dependency, and it is half of the two-block rule: the plugin market's own
+# submission gate rejects a package that "declares only dsh.client — that alone
+# is not installable". The package therefore ships BOTH this host row and the
+# `dsh.client` block in package.json.
+#
+#   host row  -> lib/index.js: registers the `webserver/index-inject` tap that
+#                contributes the first-frame <style> + synchronous <script> to
+#                every served index document (this is what covers DSH's native
+#                [data-dsh-boot] card before the shell paints it).
+#   dsh.client -> lib/client.js: the browser half, mounted into the served page,
+#                which builds the whale-maid stage inside a shadow root and
+#                calls the host script's idempotent window.__dshWhaleMaidBoot.end()
+#                once the stage is on screen.
+#
+# Install into a profile:
+#
+#   dsh plugin --profile desktop add dsh-plugin-boot-whale-maid
+#   dsh plugin --profile desktop add ./dsh-plugin-boot-whale-maid   # local path
+#
+# This file is the artifact the three-way collision note in lib/index.js refers
+# to: it must NOT be installed alongside dsh-550c-boot without picking a winner,
+# which is why the injected script yields to 550c's marker in both directions.
+#
+# `id` is the row identity in the loader tree; keep it equal to the package name
+# so a `- id: dsh-plugin-boot-whale-maid` override always targets this row.
+- insert:
+    - id: dsh-plugin-boot-whale-maid
+      name: 'dsh-plugin-boot-whale-maid'

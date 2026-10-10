@@ -1,0 +1,16 @@
+# dsh-plugin-boot-whale-maid — ignore list
+
+# Never inside the package: installed dependencies and npm's own scratch space.
+node_modules/
+.npm-cache/
+
+# Packaging scratch: the unpack-and-recheck area, and the produced archives.
+# The .tgz is a build output, not a source file — publish it as an artifact and
+# keep it out of version control (the release record carries its SHA256).
+.packcheck/
+dist/*.tgz
+
+# Editor / OS noise.
+.DS_Store
+Thumbs.db
+*.swp

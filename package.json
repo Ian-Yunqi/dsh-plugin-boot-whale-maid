@@ -1,0 +1,67 @@
+{
+  "name": "dsh-plugin-boot-whale-maid",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepSeek Harness boot stage: a full-screen whale-maid curtain-up for the splash, then a fade to the real UI. Host half injects a synchronous first frame that covers DSH's native [data-dsh-boot] card before the shell paints it; the Web client half mounts the stage in a shadow root.",
+  "license": "MIT AND CC-BY-NC-SA-4.0",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "scripts",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "scripts": {
+    "check": "node --check lib/index.js && node --check lib/client.js",
+    "smoke": "node scripts/smoke.mjs",
+    "assert": "node scripts/assert.mjs",
+    "verify": "npm run check && npm run smoke && npm run assert"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "boot-animation",
+    "splash",
+    "whale-maid",
+    "web-ui"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  }
+}
