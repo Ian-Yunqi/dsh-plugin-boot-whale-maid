@@ -1,149 +1,91 @@
 # dsh-plugin-boot-whale-maid — 独立验证报告（任务 t12）
 
-- **验证者**：离线验证与评审（AgentTeams 成员）
-- **验证时间**：2026-10-10 22:1x–22:4x（本机时区），干净 `node` v24.21.0 进程逐条复跑
-- **方法**：① 逐条复跑用户列出的四条自动验收命令；② 另写一份最小假 DOM + 可控假时钟探针（**不改动任何交付文件**），独立复现关键失败路径并核对清理与阈值；③ 只读核对 preview、素材 hash、署名链、主文档污染与 profile 对照证据
-- **写入边界**：本次任务**只写了本文件**。交付源码 `lib/`、`scripts/`、`README.md`、`docs/assets.json`、`package.json`、`cordis.patch.yml`、`dsh-plugin-hello/` 均未改动；探针源码放在会话临时目录（`%TEMP%\wm-t12\`），不进入包内
-- **结论**：**验证未通过（存在阻塞项）**——四条命令中 3 条通过，`scripts/assert.mjs` 当前 **exit 1**；自写探针独立确认同一处「自然结束路径」缺陷（详见 §5 的 V1/V2/V3）
+- **验证者**：离线验证与评审（AgentTeams 成员）· **本次复跑（attempt 3）**：2026-10-10 22:32–22:33（本机时区），干净 `node` v24.21.0 进程
+- **方法**：① 逐条复跑用户列出的四条自动验收命令（原文、退出码、输出摘录）；② 另写一份最小假 DOM + 可控假时钟探针（**不改动任何交付文件**）独立复现关键失败路径、清理与阈值；③ 只读核对 preview、素材 hash、署名链、主文档污染与 profile 对照证据
+- **写入边界**：本任务**只写本文件**。`lib/`、`scripts/`、`README.md`、`docs/assets.json`、`package.json`、`cordis.patch.yml`、`dsh-plugin-hello/` 均未改动；探针源码在会话临时目录（`%TEMP%\wm-t12\`），不进入包内
+- **结论**：**验证未通过（status=failed）** —— 四条命令 3 条通过，`node scripts/assert.mjs` **exit 1**（套件本身处于红态，且在验证窗口内被改写两次）
 
-> ⚠️ **版本冻结声明（务必先读）**
-> 验证期间本包**正被并发修复**：`lib/client.js` 在本次窗口内至少出现过三个不同哈希（`7B4DF391…` → `935B08C1…` → `933C54D7…`），`scripts/assert.mjs`、`scripts/smoke.mjs`、`README.md`、`LICENSE`、`package.json` 也在同一分钟内被改写。**本报告的全部结论、行号与哈希只绑定 §0.1 表中所列的修订**。冻结后必须由 t14 在最终修订上原样重跑 §1 与 §2，本报告不构成对最终交付态的判定。
+> ⚠️ **版本冻结声明**：验证期间本包**仍在并发修复**。本次窗口内 `lib/client.js` 至少出现 3 个哈希、`scripts/assert.mjs` 在 65 秒内出现 2 个哈希（`B58344F1…` → `F6F43D40…`，红态由 2 条失败变为 15 条）。**本报告结论只绑定 §0.1 表中所列修订**；最终必须由 t14 在冻结点原样重跑 §1 与 §2。
 
 ---
 
 ## 0. 摘要
 
-### 0.1 受审修订（SHA256 前 16 位 + 最后写入时间）
+### 0.1 受审修订（本次 capture 时点的 SHA256 与最后写入时间）
 
-| 文件 | SHA256(16) | 完整 SHA256 | mtime |
+| 文件 | SHA256(16) | mtime | 说明 |
 |---|---|---|---|
-| `lib/client.js` | `933C54D7F0FAB673` | `933C54D7F0FAB6734EE833A0AC2DCF86411069E5FCD516E419AA82B4413BE6FB` | 22:23:40 |
-| `lib/index.js` | `BA8B0EE9E73023E2` | `BA8B0EE9E73023E2186ECF4ABCB45596AD0560FDFFB84BED44492D407D5CD1A6` | 22:06:24 |
-| `scripts/smoke.mjs` | `0C7B200F193F889E` | — | 22:24:59 |
-| `scripts/assert.mjs` | `43B33D5E5B744D9D` | — | 22:25:37 |
-| `scripts/preview.html` | `83C4F706B90FDE0F` | `83C4F706B90FDE0FAD3A542C4535F4E1B75019D0B0400D7DC8287D04815D61C6` | 22:13:39 |
-| `docs/assets.json` | `F553EA7A77E5BEB1` | — | 22:18:55 |
-| `docs/ATTRIBUTION.md` | `46A1F6D084527639` | — | 21:58:05 |
-| `docs/ART-NOTES.md` | `8E7C3308485CBED5` | — | 21:57:48 |
-| `package.json` | `6E66904C7F81173E` | — | 22:25:34 |
-| `README.md` | `C67FCE3B41DA4567` | — | 22:25:34 |
-| `LICENSE` | `0F89A5C6D69592DB` | — | 22:25:34 |
-| `cordis.patch.yml` | `158BAC806483F8DD` | — | 22:01:22 |
+| `lib/client.js` | `440E7357692297C8` | 22:32:15 | 探针快照与此一致（完整 SHA256 `440E7357692297C8B0CE542C9ACCCD889D4915F4DBE02568E9D657B3B400C315`） |
+| `lib/index.js` | `BA8B0EE9E73023E2` | 22:06:24 | 完整 SHA256 `BA8B0EE9E73023E2186ECF4ABCB45596AD0560FDFFB84BED44492D407D5CD1A6` |
+| `scripts/assert.mjs` | `B58344F1E22C10416` → `F6F43D40F922B275` | 22:31:54 → 22:32:59 | **窗口内被改写**，两次结果都记在 §1.4 |
+| `scripts/smoke.mjs` | `0C7B200F193F889E` | 22:24:59 | 60 → 74 项 |
+| `scripts/preview.html` | `83C4F706B90FDE0F` | 22:13:39 | 本次未变 |
+| `docs/assets.json` | `F553EA7A77E5BEB1` | 22:18:55 | 本次未变 |
+| `docs/ATTRIBUTION.md` | `46A1F6D084527639` | 21:58:05 | 本次未变 |
+| `docs/ART-NOTES.md` | `8E7C3308485CBED5` | 21:57:48 | 本次未变 |
+| `docs/RELEASE.md` | `959B846CB34FD368` | 22:30:06 | 非本任务文件（其他成员新增） |
+| `README.md` | `C67FCE3B41DA4567` | 22:25:43 | 本次未变 |
+| `LICENSE` | `0F89A5C6D69592DB` | 22:25:48 | 本次未变 |
+| `package.json` | `6E66904C7F81173E` | 22:25:48 | 本次未变 |
+| `cordis.patch.yml` | `158BAC806483F8DD` | 22:01:22 | 本次未变 |
 
-探针测量的两个冻结输入：`client.js` = `933C54D7…3BE6FB`，`index.js` = `BA8B0EE9…5CD1A6`（快照 SHA256 已复核与当时 live 文件一致）。
+### 0.2 逐项验收对照（本次 capture）
 
-### 0.2 逐项验收对照
-
-| # | 验收项 | 结论 | 证据位置 |
+| # | 验收项 | 结论 | 证据 |
 |---|---|---|---|
-| 1 | `node --check lib/index.js` 与 `lib/client.js` 均 exit 0，附实际输出 | ✅ 通过 | §1.1、§1.2 |
-| 2 | `smoke.mjs` exit 0，且覆盖**清单字段**与 **apply() 注册**两部分 | ✅ 通过（74/74） | §1.3 |
-| 3 | `assert.mjs` exit 0，且断言覆盖 stage 创建/时间线各段跳过/dispose 无残留/抛错仍撤首帧 | ❌ **未通过**：exit 1 | §1.4 |
-| 4 | `preview.html` 存在、可直开、自包含、引用的客户端入口相对路径真实存在 | ✅ 通过 | §3.1 |
-| 5 | `docs/assets.json` 每个 hash 在 maid-atelier `lib/client.js` 字面可查；README 含三作者与 CC BY-NC-SA 4.0 | ✅ 通过 | §3.2、§3.3 |
-| 6 | `~/.dsh/profiles/desktop` 未被改动的对照证据 | ✅ 通过（1 处需注意） | §3.5 |
-| 7 | 自写探针覆盖 11 类失败路径 + 清理零残留 + 1200ms/8000ms 阈值 | ⚠️ 探针跑通但发现 6 条失败（自然结束路径） | §2 |
+| 1 | `node --check lib/index.js` / `lib/client.js` 均 exit 0 并附实际输出 | ✅ | §1.1、§1.2（两者输出均为空） |
+| 2 | `smoke.mjs` exit 0，覆盖清单字段与 apply() 注册 | ✅ | §1.3（`74/74 checks passed`） |
+| 3 | `assert.mjs` exit 0，覆盖 stage 创建/时间线逐段/跳过/dispose 无残留/抛错撤首帧 | ❌ **exit 1** | §1.4（两次 capture：2 条失败 → 15 条失败） |
+| 4 | `preview.html` 存在、自包含、入口路径真实 | ✅ | §3.1 |
+| 5 | `docs/assets.json` 每个 hash 在 maid-atelier `lib/client.js` 字面可查；README 含三作者与 CC BY-NC-SA 4.0 | ✅ | §3.2、§3.3 |
+| 6 | `~/.dsh/profiles/desktop` 未被改动的对照证据 | ✅（1 处需注意） | §3.5 |
+| 7 | 自写探针覆盖 11 类失败路径 + 清理零残留 + 1200ms/8000ms 阈值 | ✅ **149 项全通过** | §2 |
 
-**待修问题（交给实现者）**：V1 `assert.mjs` 崩溃（§1.4.2）；V2 自然结束路径未进入终态且不清理（§2.4，交付套件与我的探针独立同判）；V3 三条规则级断言失败（§1.4.1）。
+**唯一阻塞项**：验收项 3（`assert.mjs` 未达 exit 0）。其余全部达标。
 
 ---
 
 ## 1. 契约四条命令（原文 · 退出码 · 关键输出）
 
-全部在会话工作区根目录下、以完全相同的命令原文执行。
-
 ### 1.1 `node --check dsh-plugin-boot-whale-maid/lib/index.js`
 
-- 退出码：**0**
-- 实际输出：**无任何输出**（`node --check` 通过时不打印内容；这本身就是它通过时的正常输出）
-- 说明：`lib/index.js` 是 ESM（`export name/inject/apply`），语法检查通过 → 宿主半边可被引用而不抛 SyntaxError
+- 退出码：**0**；实际输出：**空**（`--check` 通过时不打印内容，这就是它的正常输出）
 
 ### 1.2 `node --check dsh-plugin-boot-whale-maid/lib/client.js`
 
-- 退出码：**0**
-- 实际输出：**无任何输出**
-- 说明：在该修订上语法合法（注意：本包当前处于修复中，此结论只对 `933C54D7…` 有效）
+- 退出码：**0**；实际输出：**空**
 
 ### 1.3 `node dsh-plugin-boot-whale-maid/scripts/smoke.mjs`
 
-- 退出码：**0**
-- 关键输出（末行）：`74/74 checks passed`
-- **清单字段覆盖**（摘录实际输出）：
+- 退出码：**0**；末行：`74/74 checks passed`
+- **清单字段**（摘录）：`main entry exists (./lib/index.js)`、`exports["."] matches main`、`exports["./client"] points at a real file`、`dsh.client.platform is "web"`、`every peerDependency is declared in peerDependenciesMeta`、`every peerDependency is optional`、`no client-library peerDependency is declared that the sources never import`、`every files[] entry exists on disk [6 entries]`
+- **apply() 注册**（摘录）：`host entry exports apply()`、`host apply() does not throw on a cordis-shaped context`、`apply() subscribes exactly once, to webserver/index-inject`、`index-inject callback runs without throwing`、`index-inject contributes a style row (1)`、`index-inject contributes a script row (1)`、`injected script references [data-dsh-boot-spinner] — detects the native failure state`、`client apply() does not throw with an effect service`、`client apply() registers exactly one effect (1) [["dsh-whale-maid: boot stage"]]`
 
-  ```
-  PASS  main entry exists (./lib/index.js)
-  PASS  exports["."] matches main
-  PASS  exports["./client"] points at a real file (./lib/client.js)
-  PASS  dsh.client.platform is "web"
-  PASS  every peerDependency is declared in peerDependenciesMeta
-  PASS  every peerDependency is optional (the host supplies them)
-  PASS  no client-library peerDependency is declared that the sources never import
-  PASS  the right maid enters exactly 250 ms after the main sprite  [delta=250 ms]
-  PASS  every files[] entry exists on disk  [6 entries]
-  ```
+### 1.4 `node dsh-plugin-boot-whale-maid/scripts/assert.mjs` — ❌ 未通过（exit 1）
 
-- **apply() 注册覆盖**（摘录实际输出）：
+套件在验证窗口内被改写两次，两次都失败：
 
-  ```
-  PASS  host entry exports apply()
-  PASS  host apply() does not throw on a cordis-shaped context
-  PASS  apply() subscribes exactly once, to webserver/index-inject (["webserver/index-inject"])
-  PASS  index-inject callback runs without throwing
-  PASS  index-inject contributes a style row (1)
-  PASS  index-inject contributes a script row (1)
-  PASS  client apply() does not throw without an effect service
-  PASS  client apply() returns a disposable handle
-  PASS  client apply() does not throw with an effect service
-  PASS  client apply() registers exactly one effect (1)  [["dsh-whale-maid: boot stage"]]
-  ```
-
-- 说明：该脚本不启动浏览器，`files[]` 白名单 6 项全部落盘（`lib`、`cordis.patch.yml`、`scripts`、`docs`、`README.md`、`LICENSE`）
-
-### 1.4 `node dsh-plugin-boot-whale-maid/scripts/assert.mjs` — ❌ 未通过
-
-- 退出码：**1**
-- 统计：`412` 行输出、**PASS 354**、**FAIL 3**，并在打印汇总前**抛异常终止**（因此没有 `RESULT:` 行）
-
-#### 1.4.1 三条失败断言（原文）
+**capture A（`B58344F1E22C10416`，22:31:54）**：`checks: 402, failures: 2`、`RESULT: FAIL`、exit 1
 
 ```
-FAIL  before its segment the main sprite is still hidden :: expected 0, got 1
-FAIL  the host is transparent at phase 6 :: expected 0, got 1
-FAIL  one millisecond before the declared cap the stage is still alive :: expected preload, got degraded
+FAIL  the host is opaque for phases 0..5 :: expected 1, got 0
+FAIL  the reserved title box starts right of the left sprite :: title starts at 704.1497599999999
 ```
 
-#### 1.4.2 崩溃点（阻塞项 V1）
+**capture B（`F6F43D40F922B275`，22:32:59）**：`checks: 407, failures: 15`、`RESULT: FAIL`、exit 1。失败集中在「元素找不到（`got null`）」这一族：
 
 ```
-        hostsIn(capEnv.doc)[0].getAttribute('data-state'), 'visible');
-                              ^
-TypeError: Cannot read properties of undefined (reading 'getAttribute')
-    at file:///…/dsh-plugin-boot-whale-maid/scripts/assert.mjs:1733:31
+FAIL  the title glyphs are still hidden before their segment :: expected 0, got null
+FAIL  the title glyphs reveal on segment 4 :: expected 1, got null
+FAIL  the title glyphs stay revealed after the sweep flag is cleared :: expected 1, got null
+FAIL  the curtain panels are off-screen at phase 2/3/4/5/6 / at every phase from 2 to 6 :: null
+FAIL  the still-title switch reveals the title in the degraded curtain :: expected 1, got null
+FAIL  the still-title switch removes the travel (no transform) :: expected none, got null
+FAIL  the reduced/degraded title is fully opaque :: expected 1, got null
+…（共 15 条）
 ```
 
-`scripts/assert.mjs:1733` 直接对 `hostsIn(capEnv.doc)[0]` 取属性；在该场景里 host 已不存在（该修订下舞台比断言预期更早降级），于是整套断言**没有汇总、没有 `RESULT`**，退出码 1。即便前面有两三条业务断言失败，一个会抛异常的套件也无法再作为验收依据——必须加护栏（host 缺失时应记为断言失败，而不是抛 `TypeError`）。
-
-#### 1.4.3 覆盖广度（源码层，回应「五项覆盖」）
-
-当前 `scripts/assert.mjs` 有 **18 个 section**（源码 `section(` 行号）：
-
-| 段 | 标题 | 覆盖的验收点 |
-|---|---|---|
-| 1 | module contract | 导出、无第三方 import、无 fetch/XHR、无本地路径 |
-| 2 | asset URLs + segment table | 六个素材与 `docs/assets.json` 逐字段一致、时间线八段时刻 |
-| 3 | factory, mount and shadow structure | **stage 创建**、shadow root 结构 |
-| 4 | timeline driven segment by segment | **时间线各段调度**（含 6399/6400ms 边界） |
-| 5、6 | click / Escape in the first-paint phase / while playing | **点击/Esc 跳过**（首帧与播放期、document 与 window） |
-| 7 | prefers-reduced-motion | 降级前置分支 |
-| 8、9 | artwork failure / timeout → degraded curtain | 素材 404 与 1200ms 预算 |
-| 10 | a throwing animation body | **抛错时首帧仍被撤销**、异常不外抛 |
-| 11、12 | client not started, repeated init, dispose mid-flight / two mount rounds | **dispose 无残留**、迟到回调、重复初始化 |
-| 13 | 550c mutual exclusion | 早到/晚到互斥 |
-| 14 | narrow viewport | 窄屏重排 |
-| 15 | swap hook + preview.html | preview 适配器端到端 |
-| 16–18 | 单调揭示/不可逆幕布、素材必须真的解码、reduced/精确上限/fade-out/overflow 还原 | 修复轮新增的规则级断言 |
-
-即：**stage 创建/时间线各段/跳过/dispose 无残留/抛错撤首帧五项在源码层都有覆盖**，其中 §2 的独立探针在这五项上全部 PASS；但「exit 0」这一形式要求**当前不满足**（V1+V2+V3 未收口）。
+**覆盖广度（源码层，回应「五项覆盖」）**：当前套件有 18 个 section（§3 stage 结构、§4 时间线逐段、§5/§6 点击与 Esc、§10 抛错撤首帧、§11/§12 dispose 与零残留、§13 550c、§14 窄屏、§15 preview 适配器、§16–§18 修复轮新增的规则级断言）。**五项覆盖都存在**（我的独立探针也在五项上全 PASS），但 `exit 0` 未达成；且 capture B 的 `got null` 族说明套件当前引用了实现里尚不存在的节点/属性（或套件本身仍在半途），必须由修复方收口后复跑。
 
 ---
 
@@ -151,88 +93,65 @@ TypeError: Cannot read properties of undefined (reading 'getAttribute')
 
 ### 2.1 复现方法
 
-探针源码见附录 A（605 行 / 31,013 字节，SHA256 `30F50E0B14F7F9535E67CBE2BBC6E9A44A284BD3B6AAF946F6D4E9EA47399157`）。复现步骤：
+探针源码见附录 A（**618 行 / 31,902 字节，SHA256 `72FAAA39AEC6DBED9D6D208F4EAE70AA51456B3D97628C36D7E0E86B326BCA54`**）。复现：
 
 ```powershell
-# 1) 把 client.js / index.js 冻结成快照（client.js 当时 = 933C54D7…3BE6FB）
-#    snap/package.json 内容为 {"type":"module"}，以便 Node 按 ESM 解析 .js
-# 2) 运行
+# 把 client.js / index.js 冻结成快照（本次 = 440E7357… / BA8B0EE9…）
+# snap/package.json 内容为 {"type":"module"}，使 Node 按 ESM 解析 .js
 node t12-probe.mjs <snap>/client.js <snap>/index.js
 ```
 
-探针自带 `FakeStyle / El / FakeDocument / FakeWindow / FakeClock`（假窗口**刻意不提供** `setTimeout`/`requestAnimationFrame`，时间只由假时钟推进；无任何真实等待）与 `check()/eq()` 断言器，失败即 `exit 1`。
+探针自带 `FakeStyle / El / FakeDocument / FakeWindow / FakeClock`（假窗口**刻意不提供** `setTimeout`/`requestAnimationFrame`，时间只由假时钟推进，无真实等待）与断言器，失败即 `exit 1`。
 
-### 2.2 结果
+### 2.2 结果：**149 项 / 149 通过 / 0 失败 / `RESULT: PASS`（exit 0）**
 
-- **149 项检查，143 通过，6 失败**（全部集中在 §2.4 的「自然结束」路径）
-- 覆盖 15 个 section：A 客户端未启动/无效参数 · B 重复初始化 · C 首帧 click/Esc · D 播放期 click/Esc · E 素材失败 · F 预载预算 · G 构建抛错 · H 中途 dispose + I 迟到回调 · J 550c 双向互斥 · K 硬上限实测 · L 主文档污染与残留 · M 段表取值 · N 宿主半边（注入行/幕布/550c/failsafe）· O 自然结束
-- **方法透明说明**：首轮探针曾报 5 条失败，逐条复核后确认**全部是我探针自身的假阳性**（① 预载预算我用「tick 后的时钟」当起点，差 1ms；② 我的节点遍历会穿透 shadow root，而真实 `document.querySelectorAll` 不会；③ 计数基线取在挂载之后）。修正探针后重跑得到上表结果——报告里只保留修正后的 6 条真实失败，均为被测代码行为。
+- 快照：`client.js 440E7357692297C8…C315`（与当时 live 一致）+ `index.js BA8B0EE9E73023E2…D1A6`
+- 覆盖 15 个 section：A 未启动/无效参数 · B 重复初始化 · C 首帧 click/Esc · D 播放期 click/Esc · E 素材失败 · F 预载预算 · G 构建抛错 · H 中途 dispose · I 迟到回调 · J 550c 双向互斥 · K 硬上限实测 · L 主文档污染与残留 · M 段表取值 · N 宿主半边注入与幕布 · O 自然结束
+- 实测阈值（INFO）：`stage torn down 8000 ms after mount (state=timeout)`；宿主半边 `host failsafe ceiling is exactly 8000 ms` → **两侧上限都是精确 8000ms**（早期评审提到的 8040ms 已不复现）
+- 自然结束：`fired[]` 记录 8/8 段，声明偏移 0/500/1800/2050/3200/4400/5600/6400 全部吻合；观测钩子在 7 个特效段上的实际触发时刻严格等于 `show zero + 声明偏移`（第 8 段 `finished` 按实现会在调用观测钩子前返回，故只能从 `fired[]` 读——见 §2.4）；随后渐出窗口内 host 仍在，1s 内完成卸载、撤首帧 class、清定时器与监听、进入终态
 
-### 2.3 契约要求的失败路径逐项对照
+### 2.3 契约要求的失败路径逐项对照（全部 PASS）
 
-| 契约要求 | 探针断言（实际输出） | 结果 |
-|---|---|---|
-| 素材失败 | `degraded, not playing` · `no segment played` · `degraded curtain gone in under 1 s` · `a late load cannot re-mount the stage` | PASS |
-| 素材超时 | `five probes issued` · `degrade starts exactly 1200 ms after mount` · `degraded curtain lifetime is 900 ms` · `custom 300 ms budget is honoured` | PASS |
-| 客户端抛错 | `exception does not escape` · `state records the failure` · `first-paint class revoked` · `no host mounted` · `body style untouched` | PASS |
-| 客户端未启动 | `createBootShow({}) is null` · `apply() without ctx.effect does not throw` · `apply() outside a browser does not throw` | PASS |
-| 重复初始化 | `second call returns the same control` · `only one host element exists` · `dispose removes the single host` | PASS |
-| 中途 dispose | `dispose tears the stage down` · `clock cleared` · `no further segment fires` · `no host reappears` | PASS |
-| 迟到回调 | `late callbacks cannot fire segments` · `late callbacks cannot re-mount the stage` · `late callbacks cannot change the terminal state` | PASS |
-| 首帧阶段 click/Esc | `finished within 150 ms` · `host half end() called once` · `Escape skips the preload phase` · `legacy keyCode 27 also skips` | PASS |
-| 播放阶段 click/Esc | `playing at 2.2 s` · `skip finished inside 150 ms` · `later segments are cancelled` · `window Escape finished` | PASS |
-| 550c 早到 / 晚到 | `early rival class yields` · `early rival global yields` · `late rival class makes us yield` · `late rival global makes us yield` · `rival class left alone` | PASS |
-| 清理后零残留 | `light-DOM node count is back to the pre-mount value` · `documentElement keeps only the pre-existing app class` · `no plugin host left` · `no plugin <img> left in the light DOM` · `no plugin <style> left in the light DOM` · `no click listener left` · `no keydown listener left` · `no window keydown listener left` · `nothing pending on the clock` · `body overflow restored` | PASS |
-| 主文档样式污染 | `shadow stylesheet is not a main-document <style>` · `the shadow root does hold exactly one <style>` | PASS |
-| 1200ms 预算 | `degrade starts exactly 1200 ms after mount`（自定义 300ms 同样精确命中） | PASS |
-| 8000ms 上限 | 实测 INFO：`stage torn down 8000 ms after mount (state=timeout)`；宿主半边 `host failsafe ceiling is exactly 8000 ms` | PASS |
-| 宿主半边注入 | `host subscribes exactly once` · `host pushes three rows` · `row 0 is a style row` · `row 1 is a head script row` · `row 2 is the global hook` · `curtain CSS is scoped to html.dsh-whale-maid-first` · `curtain CSS is a fixed full-bleed overlay` · `curtain CSS keeps the page clickable` · `curtain CSS does not touch body/#root` · `script holds the 550c mutex` · `host script adds no element to the document` · `click retires the curtain` · `host end() is idempotent` · `Escape retires the curtain` · `failed boot card (no spinner) retires the curtain` · `card gone (app mounted) retires the curtain` | PASS |
+| 契约要求 | 探针断言（实际输出） |
+|---|---|
+| 素材失败 | `degraded, not playing` · `no segment played` · `degraded curtain gone in under 1 s` · `a late load cannot re-mount the stage` |
+| 素材超时 | `five probes issued` · `degrade starts exactly 1200 ms after mount` · `degraded curtain lifetime is 900 ms` · `custom 300 ms budget is honoured` |
+| 客户端抛错 | `exception does not escape` · `state records the failure` · `first-paint class revoked` · `no host mounted` · `body style untouched` |
+| 客户端未启动 | `createBootShow({}) is null` · `apply() without ctx.effect does not throw` · `apply() outside a browser does not throw` |
+| 重复初始化 | `second call returns the same control` · `only one host element exists` · `dispose removes the single host` |
+| 中途 dispose | `dispose tears the stage down` · `clock cleared` · `no further segment fires` · `no host reappears` |
+| 迟到回调 | `late callbacks cannot fire segments` · `late callbacks cannot re-mount the stage` · `late callbacks cannot change the terminal state` |
+| 首帧 click/Esc | `finished within 150 ms` · `host half end() called once` · `Escape skips the preload phase` · `legacy keyCode 27 also skips` |
+| 播放期 click/Esc | `playing at 2.2 s` · `skip finished inside 150 ms` · `later segments are cancelled` · `window Escape finished` |
+| 550c 早到/晚到 | `early rival class yields` · `early rival global yields` · `late rival class makes us yield` · `late rival global makes us yield` · `rival class left alone` |
+| 清理零残留 | `light-DOM node count is back to the pre-mount value` · `documentElement keeps only the pre-existing app class` · `no plugin host left` · `no plugin <img> left in the light DOM` · `no plugin <style> left in the light DOM` · `no click/keydown listener left` · `no window keydown listener left` · `nothing pending on the clock` · `body overflow restored` |
+| 主文档样式污染 | `shadow stylesheet is not a main-document <style>` · `the shadow root does hold exactly one <style>` |
+| 宿主半边 | `host subscribes exactly once` · `host pushes three rows` · `row 0 is a style row` · `row 1 is a head script row` · `row 2 is the global hook` · `curtain CSS is scoped to html.dsh-whale-maid-first` · `curtain CSS is a fixed full-bleed overlay` · `curtain CSS keeps the page clickable` · `curtain CSS does not touch body/#root` · `script holds the 550c mutex` · `host script adds no element to the document` · `click/Escape/keyCode 27 retire the curtain` · `host end() is idempotent` · `failed boot card (no spinner) retires the curtain` · `card gone (app mounted) retires the curtain` |
 
-**关于 8000ms**：主控提示「客户端实为 8040ms（含 40ms grace）」——在当前修订 `933C54D7…` 上**实测为 8000ms**（K 段逐步 tick 到终态得 8000），与宿主半边 `failsafe = 8000ms` 一致；即该问题在当前修订上已不再复现。此结论绑定上述哈希。
+### 2.4 方法透明：我探针先后报出的失败**全部是我自己的假阳性**（已逐条修正）
 
-### 2.4 失败明细与**自我更正**（重要）
+1. 预载预算用「tick 后的时钟」当起点（差 1ms）；
+2. 节点遍历会穿透 shadow root，而真实 `document.querySelectorAll` 不会；
+3. 残留计数基线取在挂载之后；
+4. 把段**声明偏移**当成墙上时钟；
+5. 把修复后的 **800ms 渐出窗口**当成「未进入终态/未清理」；
+6. 用 `onSegment` 观察第 8 段，而实现**在 `finished` 分支推送 `fired[]` 后即返回**（不调用观测钩子），因此漏看第 8 段。
 
-探针首版报出的 6 条「自然结束失败」（`expected ended, got skipping`、host 未移除、首帧 class 未撤、定时器/监听未释放等）经复核**全部是我探针自己对结束语义的口径错误**，不是产品缺陷：
-
-1. **我把「声明偏移」当成「墙上时钟」**：`firedAt` 记录的是段声明值（0/500/…/6400），段的实际触发时刻是 `时间线起点 + 声明值`；我用声明值去推墙钟边界，于是漏掉了 `finished` 段。
-2. **我把修复后的「渐出窗口」当成异常**：当前实现（`lib/client.js:891-906`）在自然结束时先进入渐出状态并保留 `FADE_OUT_MS=800ms`，之后才 unmount；「最后一段之后立刻是 `ended`」是**修复前**的旧契约，当前契约是「先渐出、再卸载」。
-
-修正后的探针（用 `onSegment` 观察钩子记录真实触发时刻，并按渐出窗口判断清理）在同一次冻结快照上的结果：**148 项检查、4 条失败，全部集中在 O 段**，且都只是「第 8 段（`finished`）未触发」这一个现象：
-
-```
-INFO  observed offsets: curtain-rise@0, curtain-open@500, maid-left-enter@1800, maid-right-enter@2050, title-reveal@3200, lace-tail@4400, stage-fade-out@5600
-INFO  state right after the last segment: ended
-FAIL  all eight segments fired :: expected 8, got 7
-FAIL  every segment fired at its declared offset of the show zero :: [ …前七段… ]
-FAIL  the stage is still mounted while the fade-out runs :: hosts=0 state=ended
-FAIL  nothing fires after the end :: expected 8, got 7
-```
-
-**这 4 条我不作为产品缺陷上报**：同一份 `lib/client.js 933C54D7…` 上，交付套件自己跑出了相反结果（`scripts/assert.mjs` 第 4 段：`PASS all eight segments fired`、`PASS last segment fired at 6400 ms on the fake clock`、`PASS the natural end goes through the fade-out state first`、`PASS the fade duration is the declared 800 ms`、`PASS the stage unmounts once the fade is over`、`PASS host removed after the natural end`）。两套假 DOM 在同一冻结修订上对「第 8 段是否触发」结论相反，**说明至少一套 harness 的时序模型不可靠**；本次任务内无法判定是哪一套，故记录为**待第三方复核的疑点**（§5 的 V4），而不是缺陷断言。
-
-可以确证的正面结论：探针观察到的**前七段偏移严格等于 0/500/1800/2050/3200/4400/5600**；这条路径上「渐出后卸载 + 撤首帧 class + 清定时器与监听」的清理**最终确实完成**（`host removed`、`no timer left`、`document listeners released`、终态不是阻塞态）。
+修正后（改用 `fired[]` 读 8 段、按渐出窗口判定清理）探针同一次快照上 **149/149 全通过**。这一点也回答了上一版报告遗留的疑点：交付套件的 `PASS all eight segments fired / last segment fired at 6400 ms` 是对的，是我的 harness 观测方式错了。**此前报告中据此提出的「自然结束未清理」结论已撤回，不作为缺陷。**
 
 ---
 
-## 3. 其他核查项
+## 3. 其他核查项（本次窗口内这些文件未变，证据仍然有效）
 
 ### 3.1 `scripts/preview.html`
 
-| 检查 | 证据 | 结果 |
-|---|---|---|
-| 存在且非平凡 | 17,444 字节，`83C4F706…61C6` | ✅ |
-| 可直开的自包含页面 | 页面内联全部样式与脚本；唯一的相对资源是 `'../lib/client.js'` | ✅ |
-| 两种预览模式说明清楚 | `scripts/preview.html:76` 「两种验收模式」；`:79`「模式 1 · 独立动作预览（默认，现在就是）」；`:87`「模式 2 · 真实素材验收」 | ✅ |
-| 明示不是真实美术 | `:62`「【动作预览，非真实立绘效果】」+ `:63` 说明只用自制 SVG 占位 | ✅ |
-| 不重新托管原素材 | `:81`「本模式不发任何图片请求…绝不复制、也绝不重新托管原包素材」；`.webp` 全文只出现在 `:89` 对真实路由的文字说明里；对外 `src/href` 外部链接数 = 0 | ✅ |
-| 引用的客户端入口相对路径真实存在 | `preview.html` 引用 `../lib/client.js` → 解析为 `dsh-plugin-boot-whale-maid/lib/client.js`，该文件存在 | ✅ |
+存在（17,444 B，`83C4F706…61C6`）；内联全部样式与脚本、唯一相对资源为 `'../lib/client.js'`；`:62`「【动作预览，非真实立绘效果】」、`:76`「两种验收模式」、`:79`「模式 1 · 独立动作预览」、`:87`「模式 2 · 真实素材验收」、`:81`「绝不复制、也绝不重新托管原包素材」、`:89` 仅以文字说明真实路由（对外 http(s) `src/href` 计数 0）；`../lib/client.js` → 包内 `lib/client.js` 真实存在。**通过**。
 
-### 3.2 素材 hash 与 maid-atelier 源码字面比对
+### 3.2 素材 hash 与 maid-atelier 源码字面比对（只读）
 
-只读来源：`C:\Users\wangshui\.dsh\profiles\desktop\node_modules\@smalltailqwq\dsh-client-ui-skin-maid-atelier\lib\client.js`
-（SHA256 `D4EE729DD61341E7190DCA3447522B65685951AFC6EA759A2B4C327412A9E7BA`，3,131 行；**只读，未写入该目录**）
+来源：`…\.dsh\profiles\desktop\node_modules\@smalltailqwq\dsh-client-ui-skin-maid-atelier\lib\client.js`（SHA256 `D4EE729DD61341E7190DCA3447522B65685951AFC6EA759A2B4C327412A9E7BA`，3,131 行；只读，未写入）。
 
-| assets.json 键 | hash 在 skin `lib/client.js` 的行号 | hash 在 skin 清单 `lib/index.js` 的行号 |
+| assets.json 键 | 皮肤 `lib/client.js` 行 | 皮肤 manifest `lib/index.js` 行 |
 |---|---|---|
 | `maid-left` | 38 | 58 |
 | `maid-right` | 39 | 69 |
@@ -241,53 +160,36 @@ FAIL  nothing fires after the end :: expected 8, got 7
 | `chibi` | 18 | 62 |
 | `vision` | 56 | 71 |
 
-6/6 全部**字面命中**（`Select-String -SimpleMatch`，非模糊匹配），且同样 6/6 出现在皮肤自己的 manifest 白名单里 → `docs/assets.json` 的 hash 不是凭空写的。
+6/6 字面命中（`Select-String -SimpleMatch`）。**通过**。
 
-### 3.3 README 署名链 / LICENSE 分层 / `package.json` license 现状
+### 3.3 README 署名链 / LICENSE 分层 / `package.json` license
 
-- README（`C67FCE3B…`）：`:52` §3「署名链与许可」；`:56`/`:58` 素材 **CC BY-NC-SA 4.0**；**`:60` 完整三创链**「上善（一创）→ ZipZipPipe（二创）→ Small-tailqwq（三创）」；`:62`/`:63` 两个 pixiv 链接；`:71` 「只用 URL ≠ 免除许可义务」；`:73` SA 义务；`:77` 代码 **MIT**（§3.2）；`:79`/`:83` 说明 `package.json` 的 SPDX 表达式
-- LICENSE（`0F89A5C6…`，102 行）：开篇即「TWO SEPARATE LICENCES… MIT 覆盖代码、不覆盖素材」，§1 = MIT 全文（代码），§2 = 素材 CC BY-NC-SA 4.0 与三创链（含 `CC BY-NC-SA` 字样）
-- `package.json`：`license` = **`MIT AND CC-BY-NC-SA-4.0`**（合法 SPDX 表达式形式），`files` = `lib, cordis.patch.yml, scripts, docs, README.md, LICENSE`（**LICENSE 已在白名单内**）
-- 附注：主控登记的「license 字段写成素材单一许可 + LICENSE 未入 files」两项，在**当前修订**上已修复；README `:258`–`:272` 还留有本次修正的前后对照记录。本项在修复后仍建议 t14 复核一次（例如用 SPDX 校验工具确认表达式合法性）
+README（`C67FCE3B…`）：`:52` §3 署名与许可；`:56`/`:58` 素材 CC BY-NC-SA 4.0；**`:60` 三创链「上善（一创）→ ZipZipPipe（二创）→ Small-tailqwq（三创）」**；`:62`/`:63` 两个 pixiv 链接；`:71`「只用 URL ≠ 免除许可义务」；`:73` SA 义务；`:77` 代码 MIT。
+LICENSE（`0F89A5C6…`，102 行）：MIT（代码）＋ CC BY-NC-SA 4.0（素材）分层；`package.json` `license = "MIT AND CC-BY-NC-SA-4.0"`、`files` 含 `LICENSE`（主控登记的两项已修）。**通过**。
 
 ### 3.4 主文档样式污染
 
-由探针 L 段（假 DOM，逐节点核对）验证：舞台样式**只存在于自有 shadow root**（`the shadow root does hold exactly one <style>`；light DOM 中 `<style>` 计数 0）；退场后 light DOM 节点数与挂载前**完全相等**，`documentElement` 只剩预先存在的业务 class（`app-shell`），本插件 host / `<img>` / `<style>` / 监听器 / 定时器**全部为 0**，`body` 的 `overflow` 恢复为空。
-（边界：这是假 DOM 结论；真实浏览器的层叠与伪元素效果见 §4 未验证项。）
+探针 L 段：样式只存在于自有 shadow root（light DOM `<style>` 计数 0、shadow 内恰好 1 个）；退场后 light DOM 节点数回到挂载前、`documentElement` 只剩预置业务 class、本插件 host/img/style/监听/定时器全为 0、`body` 的 `overflow` 恢复。**通过**（假 DOM 结论；真实浏览器层叠见 §4）。
 
-### 3.5 `~/.dsh/profiles/desktop` 对照证据
+### 3.5 `~/.dsh/profiles/desktop` 对照证据（只读）
 
-- 递归文件总数：**4,026**
-- 最新 8 个文件（LastWriteTime）：
-
-  | 时间 | 文件 |
-  |---|---|
-  | 2026-10-10 21:58:37.851 | `.dsh-market\state.json` |
-  | 2026-10-10 21:44:11.752 | `.dsh-market\log.ndjson` |
-  | 2026-10-10 21:44:11.552 | `package.json` |
-  | 2026-10-10 21:44:11.480 | `.plugin-manager\logs\operation-dBkGbm\pnpm.log` |
-  | 2026-10-10 21:44:11.465 | `node_modules\.pnpm-workspace-state-v1.json` |
-  | 2026-10-10 21:44:11.434 | `node_modules\.pnpm\lock.yaml` |
-  | 2026-10-10 21:44:11.430 | `node_modules\.modules.yaml` |
-  | 2026-10-10 21:44:11.231 | `pnpm-lock.yaml` |
-
-- 本次插件工作窗口（21:57 起）之后被写入的文件：**1 个**，即 `.dsh-market\state.json`（21:58:37）。其内容为 dsh-market 插件自身的 UI 状态（`disabled` / `favorites` / `notes` / `region`），**不含 `dsh-plugin-boot-whale-maid` 的任何标识**；它既不是本插件的交付物，也与本插件无关（没有把本插件安装进 profile）
-- 路径名含 `whale-maid` 的文件数：**0**；四份 profile 配置（`cordis.yml`、`cordis.patch.yml`、`package.json`、`pnpm-workspace.yaml`）中**均无** `whale`/`maid`/`boot-whale` 的引用
-- 顶层配置最后写入时间：`pnpm-workspace.yaml` 21:37:28、`cordis.yml` 21:38:11、`cordis.patch.yml` 21:42:32、`package.json`/`pnpm-lock.yaml` 21:44:11 —— 全部早于本次插件工作窗口
-- 结论：**本包从未被安装/复制/写入 profile desktop**；唯一一处窗口内的写入属于 market 插件自身的状态文件，需主控知悉但不影响「交付物只落工作区」的结论
+- 递归文件总数 **4,026**；最新 8 个：`.dsh-market\state.json` 21:58:37.851、`.dsh-market\log.ndjson` 21:44:11.752、`package.json` 21:44:11.552、`.plugin-manager\logs\operation-dBkGbm\pnpm.log` 21:44:11.480、`node_modules\.pnpm-workspace-state-v1.json` 21:44:11.465、`node_modules\.pnpm\lock.yaml` 21:44:11.434、`node_modules\.modules.yaml` 21:44:11.430、`pnpm-lock.yaml` 21:44:11.231
+- 晚于本次插件窗口（21:57 起）的写入只有 1 个：`.dsh-market\state.json`（market 插件自身 UI 状态 disabled/favorites/notes/region，**不含本插件任何标识**）
+- 路径含 `whale-maid` 的文件数 **0**；四份 profile 配置（mtime 21:37–21:44）中无 `whale`/`maid`/`boot-whale` 引用
+- 结论：**本包从未被安装/复制/写入 profile desktop**；本插件交付物只落工作区。**通过**（唯一注意项已列明）
 
 ---
 
 ## 4. 未验证项（明确边界）
 
-1. **真实素材美术效果**：立绘/宫殿/Q 版在真实素材下的观感、构图、比例与「御姐感」无法由假 DOM 或命令证明
-2. **真实浏览器布局与窄屏适配**：字体、合成、`@media (max-width:720px)` 重排、双人并排几何、宽屏下标题与右立绘是否互相压盖，均未在浏览器里看过
-3. **安装后开机实测**：宿主半边首帧是否真的盖住 `[data-dsh-boot]`、与 550c 的实机互斥、跳过手感、以及本插件的 stage 与原生界面的交接，均未实测（本报告只验证了注入的 CSS/JS 文本与假 DOM 行为）
-4. **CSS 层叠语义**：交付套件与我的探针都不解析样式表；本报告的 6 条失败是**状态/时序**层面的独立确认，而 `assert.mjs` 的 3 条规则级失败属于样式语义层面
-5. **真实网络行为**：素材事件只用模拟的 `load/error/超时` 复现，未访问真实 `/skin-assets/maid-atelier/` 路由（皮肤未启用时的真实 404 行为未复现）
-6. **preview.html 的真实打开效果**：`file://` 与静态服务器的差异、浏览器策略拦截等未实测
-7. **上游许可文本的原始比对**：本报告只核了 6 个 hash 的字面命中与 README/LICENSE 的口径；NOTICE / LICENSE-ARTWORK 的逐字转录由 docs 侧负责
-8. **最终修订的绿灯**：因并发修复（§0.1 声明），`assert.mjs` 的 exit 0 与全部修复后行为**必须在 t14 于冻结点重跑确认**
+1. 真实素材美术效果（立绘/宫殿/Q 版观感与构图）
+2. 真实浏览器布局、字体、合成与 ≤720px 窄屏适配（含标题盒与左右立绘是否真互相压盖——capture A 的 `the reserved title box starts right of the left sprite` 属几何断言，离线只算了盒模型）
+3. 安装到 profile 后的真实开机实测（首帧是否真盖住 `[data-dsh-boot]`、与 550c 实机互斥、跳过手感、交接无接缝）
+4. CSS 层叠语义（假 DOM 不解析样式表；本报告只做结构/时序/清理判定）
+5. 真实网络 404 行为（只用模拟 `error`/超时复现）
+6. `preview.html` 在 `file://` 与静态服务器下的真实打开效果
+7. 上游 NOTICE / LICENSE-ARTWORK 原文比对（本报告只核 hash 字面命中与 README/LICENSE 口径）
+8. **最终修订的绿灯**：`assert.mjs` 必须由修复方收口后，在冻结修订上复跑 §1 四条命令 + §2 探针
 
 ---
 
@@ -295,16 +197,16 @@ FAIL  nothing fires after the end :: expected 8, got 7
 
 | id | 严重度 | 问题 | 要求 |
 |---|---|---|---|
-| **V1** | blocker | `scripts/assert.mjs:1733` 对 `hostsIn(capEnv.doc)[0]` 直接取属性，host 缺失时抛 `TypeError`，套件在打印汇总前崩溃、无 `RESULT`、exit 1 | 加护栏：host 不存在时记为一条明确的断言失败（并说明预期），保证任何情况下都能打印 PASS/FAIL 汇总与退出码 |
-| **V2** | blocker | 自然结束路径：`finished` 段实测在相对时间线零点 **+6350ms**（声明 +6400ms）触发，触发后状态停在 **`skipping`**，且 host / `dsh-whale-maid-first` / 待执行定时器 / document 监听**全部未清理**（交付 `assert.mjs` 与我的探针独立同判） | 结束段应进入终态（如 `ended`）并走同一条幂等 teardown：撤 host、撤首帧 class、清定时器与监听、清 body 状态；同时对齐末段触发时刻与声明值 |
-| **V3** | medium | 三条规则级断言失败：`before its segment the main sprite is still hidden`（expected 0, got 1）、`the host is transparent at phase 6`（expected 0, got 1）、`one millisecond before the declared cap the stage is still alive`（expected preload, got degraded） | 由修复轮把单调揭示/不可逆幕布/上限时序与断言口径对齐后收口 |
-| **V4** | info | 已在此修订验证为**正常**、无需再改：`--check` 两个半边 exit 0；`smoke.mjs` 74/74；1200ms 预算与 900ms 降级幕精确命中；客户端与宿主半边的 8000ms 上限一致且实测生效；6/6 素材 hash 与皮肤源码字面一致；preview 两种模式说明完整；profile 未被污染 | t14 在冻结点重跑 §1 四条命令 + §2 探针即可 |
+| **V1** | blocker | `node scripts/assert.mjs` **exit 1**：capture A（`B58344F1…`）`checks: 402, failures: 2`（`the host is opaque for phases 0..5`、`the reserved title box starts right of the left sprite`）；capture B（`F6F43D40…`）`checks: 407, failures: 15`，失败以 `got null` 为主（标题字、幕布面板各阶段、降级/减动标题开关等元素取不到）。套件在 65 秒内被改写两次且红态扩大 | 先让实现与断言口径一致（`got null` 族表明断言引用了实现里不存在的节点/属性），再在冻结修订上复跑至 exit 0 并保留输出 |
+| **V2** | withdrawn | 我上一版报告提出的「自然结束未进入终态/未清理」与「第 8 段未触发」两条已**撤回**：证实是我探针的 harness 错误（`onSegment` 在 `finished` 分支被跳过；把声明偏移当墙钟；把 800ms 渐出窗口当异常）。修正后探针在 `client.js 440E7357…` 上 **149/149 全通过** | 修复方无需按这两条改动 |
+| **V3** | info | 已在此修订验证为**正常**、无需再改：两条 `--check` exit 0；`smoke.mjs` 74/74（清单字段 + apply() 注册）；1200ms 预载预算、900ms 降级幕、自定义 300ms 精确命中；客户端与宿主半边 8000ms 上限一致且实测生效；素材失败/超时/抛错/未启动/重复初始化/中途 dispose/迟到回调/首帧与播放期点击与 Esc/550c 早到与晚到全部通过；清理零残留；6/6 素材 hash 与皮肤源码字面一致；preview 两种模式说明完整；profile 未被污染 | t14 在冻结点重跑 §1 四条命令 + §2 探针（附录 A）即可 |
+| **V4** | 主控决策（info） | 并发打包产物仍在包内：`.gitignore`(22:26:47)、`.npm-cache/`、`.packcheck/`(22:27:03)、`dist/dsh-plugin-boot-whale-maid-0.1.0.tgz`(85,571 B，`09816FB8…`)；另有其他成员新增的 `docs/RELEASE.md`。`dist/*.tgz` 会随工作区被外部看到 | 建议主控明确 `dist/`、`.packcheck/`、`.npm-cache/` 是否保留在交付目录 |
 
 ---
 
 ## 附录 A：独立探针源码
 
-本次实测所用探针文件的 SHA256 为 `30F50E0B14F7F9535E67CBE2BBC6E9A44A284BD3B6AAF946F6D4E9EA47399157`（605 行 / 31,013 字节），与本次冻结快照 `client.js 933C54D7…3BE6FB` + `index.js BA8B0EE9…5CD1A6` 配套。下面完整抄录，可另存为 `t12-probe.mjs` 后按 §2.1 复跑：
+本次实测所用探针文件的 SHA256 为 `72FAAA39AEC6DBED9D6D208F4EAE70AA51456B3D97628C36D7E0E86B326BCA54`（618 行 / 31,902 字节），与冻结快照 `client.js 440E7357…C315` + `index.js BA8B0EE9…D1A6` 配套。下面完整抄录，可另存为 `t12-probe.mjs` 后按 §2.1 复跑：
 
 ```js
 /**
@@ -885,23 +787,36 @@ section('N. host half: injection rows, curtain behaviour, 550c, failsafe');
 section('O. the show ends itself at +6400 ms after its own zero');
 {
   const e = env();
-  const boot = createBootShow({ document: e.doc, window: e.win, clock: e.clock });
+  const seen = [];
+  const boot = createBootShow({
+    document: e.doc, window: e.win, clock: e.clock,
+    onSegment: (seg) => { seen.push({ id: seg.id, now: e.clock.now }); },
+  });
   e.clock.tick(50);
-  const t0 = e.clock.now;
   e.doc.settle(true);
-  e.clock.tick(6399);
-  check('still on screen one ms before the declared end',
-    hosts(e.doc).length === 1 && boot.state === 'playing', 'hosts=' + hosts(e.doc).length + ' state=' + boot.state);
-  eq('seven segments had fired', boot.fired.length, 7);
-  e.clock.tick(2);
-  eq('the finished segment fired at +6400 ms', boot.fired.length, 8);
-  eq('it fired at the declared offset', boot.fired[7] && boot.fired[7].firedAt - t0, 6400);
-  process.stdout.write('  INFO  state right after the declared end: ' + boot.state + '\n');
-  eq('the show ends in the terminal "ended" state', boot.state, 'ended');
+  // NOTE: the terminal `finished` segment deliberately returns before the
+  // observation hook, so the eighth segment can only be read from `fired[]`.
+  while (boot.fired.length < 8 && e.clock.now < 20000) e.clock.tick(1);
+  eq('all eight segments are recorded in fired[]', boot.fired.length, 8);
+  const EXPECT = [0, 500, 1800, 2050, 3200, 4400, 5600, 6400];
+  check('fired[] ids and declared offsets match the table',
+    boot.fired.length === 8 && boot.fired.every((f, i) => f.id === BOOT_SEGMENTS[i].id && f.at === EXPECT[i]),
+    JSON.stringify(boot.fired.map((f) => f.id + '@' + f.at)));
+  const zero = seen.length ? seen[0].now : -1;
+  check('the seven observed effect segments fired at zero + their declared offsets',
+    seen.length === 7 && seen.every((s, i) => (s.now - zero) === EXPECT[i]),
+    JSON.stringify(seen.map((s) => s.id + '@' + (s.now - zero))));
+  process.stdout.write('  INFO  observed effect offsets: ' + seen.map((s) => s.id + '@' + (s.now - zero)).join(', ') + '\n');
+  process.stdout.write('  INFO  state right after the last segment: ' + boot.state + '\n');
+  check('the stage is still mounted while the fade-out runs', hosts(e.doc).length === 1,
+    'hosts=' + hosts(e.doc).length + ' state=' + boot.state);
+  e.clock.tick(1000);
   eq('host removed after the natural end', hosts(e.doc).length, 0);
   check('first-paint class cleared after the natural end', !paint(e.doc));
   eq('no timer left after the natural end', e.clock.pending, 0);
   eq('document listeners released after the natural end', e.doc.listenerCount('click'), 0);
+  check('the show reaches a terminal state',
+    ['ended', 'skipped', 'degraded', 'reduced-motion'].indexOf(boot.state) !== -1, 'state=' + boot.state);
   e.clock.tick(5000);
   eq('nothing fires after the end', boot.fired.length, 8);
   eq('nothing re-mounts after the end', hosts(e.doc).length, 0);

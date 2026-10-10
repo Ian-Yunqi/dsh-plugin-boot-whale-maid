@@ -1,0 +1,144 @@
+{
+  "browser": "Chrome/155.0.8059.39",
+  "url": "http://127.0.0.1:8731/.captain-probe/capture-cdp.html",
+  "viewport": "1600x900",
+  "declaredSegments": [
+    {
+      "id": "curtain-rise",
+      "at": 0,
+      "end": 500
+    },
+    {
+      "id": "curtain-open",
+      "at": 500,
+      "end": 1800
+    },
+    {
+      "id": "maid-left-enter",
+      "at": 1800,
+      "end": 3200
+    },
+    {
+      "id": "maid-right-enter",
+      "at": 2050,
+      "end": 3200
+    },
+    {
+      "id": "title-reveal",
+      "at": 3200,
+      "end": 4400
+    },
+    {
+      "id": "lace-tail",
+      "at": 4400,
+      "end": 5600
+    },
+    {
+      "id": "stage-fade-out",
+      "at": 5600,
+      "end": 6400
+    },
+    {
+      "id": "finished",
+      "at": 6400,
+      "end": 6400
+    }
+  ],
+  "note": "时钟由页面注入并同步步进；CSS 过渡在同步步进后均已走完，因此 JS 时间线与实际画面一致。占位素材为自制 SVG，非真实立绘。 prefers-reduced-motion 与 new Image() 在本抓图夹具中被替换为「不命中」「瞬时完成」，故这是测试夹具下的动作预览，不能替代正式加载路径。",
+  "shots": [
+    {
+      "file": "stage-01-maids-entering-3.0s.png",
+      "requestedAnimMs": 3000,
+      "expectation": "角色入场（幕布已开，标题未现）",
+      "measuredAnimMs": 3030,
+      "capturedState": {
+        "animTimeMs": 3030,
+        "controlState": "playing",
+        "hostMounted": true,
+        "hostDataState": "visible",
+        "hostOpacity": "1",
+        "stagePhase": "3",
+        "curtainFlag": "open",
+        "curtainOpacity": "1",
+        "curtainPanelTransform": "matrix(1, 0, 0, 1, -872.64, 0)",
+        "palaceOpacity": "1",
+        "maidLeftOpacity": "1",
+        "maidRightOpacity": "0.999432",
+        "chibiOpacity": "1",
+        "titleOpacity": "0",
+        "titleEnOpacity": "0",
+        "timelineFired": 4
+      },
+      "segmentsFiredByThen": [
+        "curtain-rise@0",
+        "curtain-open@500",
+        "maid-left-enter@1800",
+        "maid-right-enter@2050"
+      ]
+    },
+    {
+      "file": "stage-02-title-complete-4.5s.png",
+      "requestedAnimMs": 4500,
+      "expectation": "标题完整（中文+英文+金线）",
+      "measuredAnimMs": 4529,
+      "capturedState": {
+        "animTimeMs": 4529,
+        "controlState": "playing",
+        "hostMounted": true,
+        "hostDataState": "visible",
+        "hostOpacity": "1",
+        "stagePhase": "5",
+        "curtainFlag": "open",
+        "curtainOpacity": "1",
+        "curtainPanelTransform": "matrix(1, 0, 0, 1, -872.64, 0)",
+        "palaceOpacity": "1",
+        "maidLeftOpacity": "1",
+        "maidRightOpacity": "1",
+        "chibiOpacity": "1",
+        "titleOpacity": "1",
+        "titleEnOpacity": "1",
+        "timelineFired": 6
+      },
+      "segmentsFiredByThen": [
+        "curtain-rise@0",
+        "curtain-open@500",
+        "maid-left-enter@1800",
+        "maid-right-enter@2050",
+        "title-reveal@3200",
+        "lace-tail@4400"
+      ]
+    },
+    {
+      "file": "stage-03-stable-stage-5.3s.png",
+      "requestedAnimMs": 5300,
+      "expectation": "完整稳定舞台（粒子/鲸尾段）",
+      "measuredAnimMs": 5330,
+      "capturedState": {
+        "animTimeMs": 5330,
+        "controlState": "playing",
+        "hostMounted": true,
+        "hostDataState": "visible",
+        "hostOpacity": "1",
+        "stagePhase": "5",
+        "curtainFlag": "open",
+        "curtainOpacity": "1",
+        "curtainPanelTransform": "matrix(1, 0, 0, 1, -872.64, 0)",
+        "palaceOpacity": "1",
+        "maidLeftOpacity": "1",
+        "maidRightOpacity": "1",
+        "chibiOpacity": "1",
+        "titleOpacity": "1",
+        "titleEnOpacity": "1",
+        "timelineFired": 6
+      },
+      "segmentsFiredByThen": [
+        "curtain-rise@0",
+        "curtain-open@500",
+        "maid-left-enter@1800",
+        "maid-right-enter@2050",
+        "title-reveal@3200",
+        "lace-tail@4400"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# dsh-plugin-boot-whale-maid — npm pack exclusions
+#
+# The review screenshots under docs/shots/ document the build FOR THE
+# REPOSITORY (they are cited by docs/VISUAL-REVIEW.md). They are not plugin
+# assets, so they stay out of the installable tarball. The corresponding
+# Markdown documents still ship, because their text is part of the package's
+# attribution and verification record.
+#
+# Nothing from the maid-atelier skin package is ever bundled: that artwork is
+# referenced at runtime only, over the same-origin route
+# /skin-assets/maid-atelier/<hash>.webp. See LICENSE and docs/ATTRIBUTION.md.
+
+docs/shots/
+
+# Local build/verification scratch, never part of a release.
+.npm-cache/
+.packcheck/
+dist/
+.git/
+.gitignore
+npm-debug.log*

@@ -471,10 +471,30 @@ function at(env, ms) {
 // fails loudly here instead of silently passing unverified.
 // ---------------------------------------------------------------------------
 
-const SEL_PART = /:host|\[[^\]]+\]|:last-child|:nth-child\(\d+\)|::?[a-z-]+(?:\([^)]*\))?|\.[A-Za-z0-9_-]+/g;
+const SEL_PART = /:host|\[[^\]]+\]|:last-child|:nth-child\(\d+\)|::?[a-z-]+(?:\([^)]*\))?|\.[A-Za-z0-9_-]+|[A-Za-z][A-Za-z0-9-]*/g;
 
-function parseDecls(body) {
-    const out = [];
+/**
+ * Rewrite the functional `:host(...)` grouping into the equivalent attribute
+ * chain, so a selector can be split on whitespace and still yield one compound
+ * per element. Without this, `:host([data-state="visible"])` looks like a single
+ * compound ending in `..."])`, matches nothing, and the engine would silently
+ * report the host as invisible while the stylesheet says otherwise.
+ */
+function normaliseHostForm(selector) {
+    // `:host([a="b"])` -> `:host[a="b"]`: the functional form is ONE compound
+    // (the shadow host carrying attribute conditions). Collapsing it here keeps a
+    // selector splittable on whitespace with exactly one compound per element.
+    // The `\s*` guards matter — the closing paren is consumed separately, so
+    // without them the brackets would be doubled.
+    return String(selector).replace(/:host\(\s*\[/g, ':host[').replace(/\]\s*\)/g, ']');
+}
+
+/** Split a selector into compounds, expanding `:host(...)` first. */
+function splitChain(selector) {
+    return normaliseHostForm(selector).split(/\s+/).filter(Boolean);
+}
+
+function parseDecls(body) {    const out = [];
     const text = String(body).replace(/\/\*[\s\S]*?\*\//g, '');
     const steps = text.split(';');
     for (let i = 0; i < steps.length; i += 1) {
@@ -527,7 +547,12 @@ function parseCssSource(css) {
                 const selectors = frame.selectors.split(',').map((s) => s.trim()).filter(Boolean);
                 const decls = parseDecls(buffer);
                 for (let s = 0; s < selectors.length; s += 1) {
-                    rules.push({ selector: selectors[s], maxWidth: maxWidth, decls: decls, order: rules.length });
+                    rules.push({
+                        selector: normaliseHostForm(selectors[s]),
+                        maxWidth: maxWidth,
+                        decls: decls,
+                        order: rules.length,
+                    });
                 }
             } else if (frame && frame.at) {
                 media.pop();
@@ -607,6 +632,15 @@ function matchSimple(compound, attrs, target) {
             // Unknown pseudo-class: fail loudly.
             throw new Error('cascade engine: unsupported token in selector: ' + compound);
         }
+        if (/^[A-Za-z][A-Za-z0-9-]*$/.test(tok)) {
+            // A bare tag name (`span`, `i`, `img`). The element this rule is being
+            // evaluated for was already selected by the caller, so a tag is a
+            // match with the lowest specificity class — which is exactly right
+            // for `.wm-title-cn span` beating nothing but losing to
+            // `.stage[data-phase="4"] .wm-title-cn span`.
+            specificity += 1;
+            continue;
+        }
         throw new Error('cascade engine: unsupported token in selector: ' + compound);
     }
     return specificity;
@@ -626,10 +660,17 @@ function cascade(css, attrs, width, elementSelector) {
     const rules = parseCssSource(css);
     const winners = new Map();
     let matchedRules = 0;
+    const wantsHost = elementSelector === ':host';
     // An element selector may itself span compounds (`.wm-title-cn span`), so the
     // leaf can be a suffix of the rule's chain rather than one compound.
-    const wantedParts = elementSelector === ':host' ? [':host'] : elementSelector.split(/\s+/);
+    const wantedParts = wantsHost ? [] : elementSelector.split(/\s+/);
+    /** Index of the rule compound that the queried element corresponds to. */
     const leafAt = (chain) => {
+        if (wantsHost) {
+            // `:host` and `:host[a][b]` is one compound; `:host .x` would be two
+            // and is not supported (the engine would throw on the mismatch).
+            return chain.length === 1 && chain[0].indexOf(':host') === 0 ? 0 : -1;
+        }
         if (chain.length < wantedParts.length) return -1;
         for (let i = 0; i < wantedParts.length; i += 1) {
             if (chain[chain.length - wantedParts.length + i] !== wantedParts[i]) return -1;
@@ -639,21 +680,38 @@ function cascade(css, attrs, width, elementSelector) {
     for (let i = 0; i < rules.length; i += 1) {
         const rule = rules[i];
         if (rule.maxWidth !== null && !(width <= rule.maxWidth)) continue;
-        const chain = rule.selector.split(/\s+/);
+        // Anything outside the modelled subset must fail loudly: silently
+        // skipping a selector would let an unverified rule look like a pass.
+        if (/[+>~]/.test(rule.selector)) {
+            throw new Error('cascade engine: unsupported combinator in selector: ' + rule.selector);
+        }
+        const chain = splitChain(rule.selector);
         const start = leafAt(chain);
         if (start === -1) continue;
         let ok = true;
+        let specificity = 0;
         // Everything before the leaf is ancestry. The only ancestry in this
-        // shadow root is `.stage` (or `:host`), described by `attrs`.
-        for (let p = 0; p < start; p += 1) {
-            if (matchSimple(chain[p], attrs, 'element') === null) { ok = false; break; }
+        // shadow root is `.stage`, described by `attrs`.
+        for (let p = 0; p < chain.length; p += 1) {
+            const compound = chain[p];
+            // Only `:host` itself is the shadow host; `.stage[...]` is an element.
+            const isHostCompound = compound.indexOf(':host') === 0;
+            const value = matchSimple(compound, attrs, isHostCompound ? 'host' : 'element');
+            if (value === null) { ok = false; break; }
+            specificity += value;
         }
         if (!ok) continue;
         matchedRules += 1;
         for (let d = 0; d < rule.decls.length; d += 1) {
             const decl = rule.decls[d];
-            // Same target element, same source order: the later rule wins.
-            winners.set(decl.prop, { value: decl.value, order: rule.order });
+            // Real cascade order: higher specificity wins, ties go to the later
+            // rule. This is what makes `:host([data-phase="5"])` beat bare
+            // `:host`, and `.stage[data-phase="5"] .x` beat bare `.x`.
+            const prev = winners.get(decl.prop);
+            if (!prev || specificity > prev.specificity
+                || (specificity === prev.specificity && rule.order >= prev.order)) {
+                winners.set(decl.prop, { value: decl.value, specificity: specificity, order: rule.order });
+            }
         }
     }
     return {
@@ -954,7 +1012,7 @@ section('5. click / Escape in the first-paint phase');
     win.__dshWhaleMaidBoot = { end() { endCalls += 1; } };
     const boot = createBootShow({ document: doc, window: win, clock });
     eq('curtain is already painted before any asset lands',
-        hostsIn(doc)[0].getAttribute('data-state'), 'hidden');
+        hostsIn(doc)[0].getAttribute('data-state'), 'visible');
 
     // click lands before the clock advanced at all
     doc.dispatchEvent({ type: 'click', target: doc.body });
@@ -1664,13 +1722,24 @@ section('16. stylesheet rules: monotonic reveal + irreversible curtain');
         }));
 
     // --- F3: the host fades out on the phase, before it is removed ----------
-    // `:host` is the shadow host, not a child of `.stage`, so it is matched
-    // against `:host` rules alone.
-    const hostCell = (phase) => cascade(css, {}, wide, ':host');
-    eq('the host is opaque for phases 0..5', hostCell().get('opacity'), '1');
-    eq('the host is transparent at phase 6',
-        cascade(css, { 'data-phase': '6' }, wide, ':host').get('opacity'), '0');
-    eq('the host fades over the declared 800 ms', hostCell().get('transition'), 'opacity 800ms ease-out');
+    // `:host` is the shadow host, NOT a child of `.stage`, so it is matched
+    // against `:host` rules with the host's own attributes. `data-phase` is
+    // written while the scene is built (initial value 0), so the first painted
+    // frame already satisfies `:host([data-phase="0"]){opacity:1}`.
+    const hostAt = (phase) => cascade(css, { 'data-phase': String(phase) }, wide, ':host');
+    eq('the host is opaque at phase 0 (first painted frame)',
+        hostAt(0).get('opacity'), '1');
+    eq('the host is opaque for phases 1..5',
+        [1, 2, 3, 4, 5].filter((p) => hostAt(p).get('opacity') === '1').length, 5);
+    check('the phase rule beats the bare :host baseline on specificity',
+        hostAt(5).all.get('opacity').specificity > cascade(css, {}, wide, ':host').all.get('opacity').specificity,
+        'phase spec ' + hostAt(5).all.get('opacity').specificity
+        + ' vs baseline ' + cascade(css, {}, wide, ':host').all.get('opacity').specificity);
+    eq('a host with no phase attribute at all is still hidden',
+        cascade(css, {}, wide, ':host').get('opacity'), '0');
+    eq('the host is transparent at phase 6', hostAt(6).get('opacity'), '0');
+    eq('the host fades over the declared 800 ms',
+        cascade(css, {}, wide, ':host').get('transition'), 'opacity 800ms ease-out');
 
     // --- the degraded and reduced curtains are the same still card ----------
     const degradeCell = cell({ mode: 'degrade', reveal: true }, '.wm-title-cn span');
@@ -1779,7 +1848,7 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     eq('reduced motion is visible while it lasts',
         hostsIn(reducedEnv.doc)[0].getAttribute('data-state'), 'visible');
     const css = stageCssOf(reducedEnv.doc);
-    const stillCard = cascade(css, stageAttrs({ mode: 'degrade', reveal: true }), 1920, 'element');
+    const stillCard = cascade(css, stageAttrs({ mode: 'degrade', reveal: true }), 1920, '.wm-title-cn span');
     eq('the reduced/degraded title is fully opaque', stillCard.get('opacity'), '1');
     eq('the reduced/degraded title has no travel', stillCard.get('transform'), 'none');
     reducedEnv.clock.tick(400);
@@ -1836,14 +1905,20 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     // --- F4: the host is visible for the whole run, and rewritten on exit ---
     const visEnv = makeEnv();
     const visBoot = createBootShow({ document: visEnv.doc, window: visEnv.win, clock: visEnv.clock });
-    eq('the first painted frame is visible', hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
+    eq('the first painted frame is visible (host, before any tick)',
+        hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
     visEnv.clock.tick(1);
     eq('still visible during preloading',
         hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
     visEnv.doc.settleImages(true);
     eq('still visible after the artwork resolves (warm-cache path)',
         hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
-    visEnv.clock.tick(3199);
+    // The timeline's own zero is the moment the artwork resolved, so segment 3
+    // is reached 2050 ms later and segment 4 at 3200 ms.
+    at(visEnv, 2050);
+    eq('visible at segment 3', hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
+    eq('the phase has reached 3', inShadow(visEnv.doc, '.stage').getAttribute('data-phase'), '3');
+    at(visEnv, 3200);
     eq('visible at segment 4', hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
     eq('the phase has reached 4', inShadow(visEnv.doc, '.stage').getAttribute('data-phase'), '4');
     visEnv.doc.dispatchEvent({ type: 'click', target: visEnv.doc.body });
@@ -1855,8 +1930,8 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     // degrade path rewrites it as well
     const degEnv = makeEnv();
     const degBoot = createBootShow({ document: degEnv.doc, window: degEnv.win, clock: degEnv.clock });
-    eq('degraded curtain starts visible', hostsIn(degEnv.doc)[0].getAttribute('data-state'), 'visible');
     degEnv.clock.tick(1);
+    eq('degraded curtain starts visible', hostsIn(degEnv.doc)[0].getAttribute('data-state'), 'visible');
     degEnv.doc.settleImages(false);
     eq('degrade keeps it visible while the card is up',
         hostsIn(degEnv.doc)[0].getAttribute('data-state'), 'visible');
@@ -1868,6 +1943,13 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     eq('degrade left no host', hostsIn(degEnv.doc).length, 0);
 
     // --- F9: the title box and the right maid cannot overlap ----------------
+    // The implementation reserves the box dynamically (`titleLeft = right sprite
+    // width + gap`, capped by the stage width), so the assertion reads the two
+    // custom properties the stage really sets rather than re-deriving an old
+    // formula of its own.
+    const rightSpriteWidth = (h) => 0.92 * h * 0.5259;
+    const rightMaidLeftEdge = (w, h) => w - Math.max(8, Math.min(0.05 * w, 80)) - rightSpriteWidth(h);
+
     const wideEnv = makeEnv({ width: 1920, height: 1080 });
     const wideBoot = createBootShow({ document: wideEnv.doc, window: wideEnv.win, clock: wideEnv.clock });
     const wideStage = inShadow(wideEnv.doc, '.stage');
@@ -1875,11 +1957,27 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
         wideStage.getAttribute('data-right'), '1');
     const wideLeft = parseFloat(wideStage.style.getPropertyValue('--wm-title-left'));
     const wideMax = parseFloat(wideStage.style.getPropertyValue('--wm-title-max'));
-    const rightSpriteW = 0.92 * 1080 * 0.5259;
-    const rightEdge = 1920 - Math.max(8, Math.min(0.05 * 1920, 80)) - rightSpriteW;
-    check('the reserved title box stops before the right maid starts',
-        wideLeft + wideMax <= rightEdge + 1,
-        'title ends at ' + (wideLeft + wideMax) + ', right maid starts at ' + rightEdge);
+    const wideAvail = parseFloat(wideStage.style.getPropertyValue('--wm-title-avail'));
+    const wideRightEdge = rightMaidLeftEdge(1920, 1080);
+    // The painted box is bounded by both the CSS `min(40vw, --wm-title-max)` and
+    // the `--wm-title-avail` cap, so the smaller of the two is what is drawn.
+    const painted = Math.min(0.4 * 1920, wideMax, wideAvail);
+    // Where the two sprites really sit, from the same geometry the client uses:
+    // left edge `clamp(8px,6%,96px)` + 96%H * 1122/2019, right edge
+    // `W - clamp(8px,5%,80px) - 92%H * 1077/2048`.
+    const leftSpriteRightEdge = (w, h) => Math.max(8, Math.min(0.06 * w, 96)) + 0.96 * h * (1122 / 2019);
+    const wideLeftSpriteEnd = leftSpriteRightEdge(1920, 1080);
+    check('the stage publishes a reserved title box',
+        wideLeft > 0 && wideMax > 0, wideLeft + ' / ' + wideMax);
+    check('the reserved title box starts just right of the left sprite',
+        wideLeft >= wideLeftSpriteEnd + 31 && wideLeft <= wideLeftSpriteEnd + 33,
+        'title starts at ' + wideLeft + ', left sprite ends at ' + wideLeftSpriteEnd);
+    check('the painted title box stays clear of the right maid',
+        wideLeft + painted <= wideRightEdge + 1,
+        'title ends at ' + (wideLeft + painted) + ', right maid starts at ' + wideRightEdge
+        + ', left sprite ends at ' + wideLeftSpriteEnd);
+    check('the title box stays inside the viewport',
+        wideLeft + painted <= 1920, 'title ends at ' + (wideLeft + painted));
     wideBoot.dispose();
 
     const tightEnv = makeEnv({ width: 1440, height: 900 });
@@ -1891,6 +1989,8 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     check('the yielded layout keeps the title fully on screen',
         tightLeft + tightMax <= 1440, 'title ends at ' + (tightLeft + tightMax));
     check('the compact title still keeps a usable box', tightMax >= 160, String(tightMax));
+    check('with the right maid gone there is nothing for the title to overlap',
+        tightStage.getAttribute('data-right') === '0');
     tightBoot.dispose();
 }
 

@@ -1,7 +1,6 @@
 {
   "name": "dsh-plugin-boot-whale-maid",
   "version": "0.1.0",
-  "private": true,
   "description": "DeepSeek Harness boot stage: a full-screen whale-maid curtain-up for the splash, then a fade to the real UI. Host half injects a synchronous first frame that covers DSH's native [data-dsh-boot] card before the shell paints it; the Web client half mounts the stage in a shadow root.",
   "license": "MIT AND CC-BY-NC-SA-4.0",
   "type": "module",
@@ -24,6 +23,7 @@
     "README.md",
     "LICENSE"
   ],
+  "//files-note": "docs/ ships because scripts/smoke.mjs and scripts/assert.mjs both read docs/assets.json, so the package must be able to verify itself after unpacking. The review screenshots under docs/shots/ are excluded by .npmignore (see that file) because they document the build for the repository rather than serving the installed plugin. Nothing from the source skin package is ever bundled.",
   "engines": {
     "node": "^22.19.0 || >=24"
   },
@@ -40,7 +40,8 @@
     "check": "node --check lib/index.js && node --check lib/client.js",
     "smoke": "node scripts/smoke.mjs",
     "assert": "node scripts/assert.mjs",
-    "verify": "npm run check && npm run smoke && npm run assert"
+    "verify": "npm run check && npm run smoke && npm run assert",
+    "pack:release": "npm pack --cache .npm-cache"
   },
   "keywords": [
     "dsh",
@@ -50,6 +51,9 @@
     "boot-animation",
     "splash",
     "whale-maid",
+    "whale-girl",
+    "maid",
+    "startup-animation",
     "web-ui"
   ],
   "peerDependencies": {
