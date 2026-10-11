@@ -319,7 +319,7 @@ const readmeText = await readFile(join(root, 'README.md'), 'utf8');
 const flat = licenceText.replace(/\s+/g, ' ');
 check(pkg.license === 'SEE LICENSE IN LICENSE', 'package refers to its layered LICENSE');
 check(flat.includes('Permission is hereby granted, free of charge') && flat.includes('WITHOUT WARRANTY OF ANY KIND'), 'code retains the MIT grant and disclaimer');
-check(licenceText.includes('AI-generated') && licenceText.includes('CC BY-NC-SA 4.0'), 'generated assets and referenced upstream chibi have separate scope');
+check(licenceText.includes('AI-generated') && licenceText.includes('CC BY-NC-SA 4.0'), 'generated assets and bundled upstream chibi have separate scope');
 check(readmeText.includes('9.6') && readmeText.includes('2.6'), 'README documents full and reduced-motion durations');
 check(readmeText.includes('LICENSE') && readmeText.includes('docs/ATTRIBUTION.md'), 'README points to license and attribution');
 

@@ -61,7 +61,7 @@
     "used": true,
     "aspectRatio": 1.1211573236889694,
     "role": "chibi",
-    "source": "Existing maid-atelier skin; runtime reference only, not bundled",
+    "source": "Bundled unmodified from @smalltailqwq/dsh-client-ui-skin-maid-atelier@0.1.7; CC BY-NC-SA 4.0, see docs/ATTRIBUTION.md",
     "codec": "WebP"
   },
   "vision": {

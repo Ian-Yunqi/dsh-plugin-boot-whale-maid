@@ -27,5 +27,5 @@ SOFTWARE.
 AI-generated artwork
 The two bundled PNGs were generated and edited with the built-in imagegen tool for this user's approved design. They are not copies of the upstream skin files. This notice does not claim exclusive copyright or transfer the upstream skin artwork licence onto the generated PNGs. See docs/ATTRIBUTION.md for provenance.
 
-Referenced upstream chibi — CC BY-NC-SA 4.0
-The blue-haired chibi is read from the locally installed maid-atelier package at runtime; its skin need not be enabled. It is not included as bytes in this distribution. It retains its upstream attribution and non-commercial/share-alike conditions; the software MIT grant does not relicense it. See docs/ATTRIBUTION.md.
+Bundled upstream chibi — CC BY-NC-SA 4.0
+The blue-haired chibi is bundled unmodified from @smalltailqwq/dsh-client-ui-skin-maid-atelier@0.1.7. It retains the attribution chain 上善 → ZipZipPipe → Small-tailqwq and its non-commercial/share-alike conditions; the software MIT grant does not relicense it. See docs/ATTRIBUTION.md, LICENSE-ARTWORK and docs/UPSTREAM-NOTICE for source, full artwork licence and upstream credits.

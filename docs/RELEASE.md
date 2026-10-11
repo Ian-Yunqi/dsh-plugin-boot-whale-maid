@@ -1,27 +1,27 @@
-# dsh-boot 0.3.0
+# dsh-boot 0.3.1 · 修复新安装缺少 Q 版人物
 
-插件包名精简为 dsh-boot，开场标题为“深度求索”，副标题为 DEEPSEEK。
+此前 Q 版图片从用户本机的 maid-atelier 皮肤包读取；仅安装 dsh-boot 的用户会缺少小人物。0.3.1 将原蓝发 Q 版 WebP 随包携带，并通过本插件素材路由直接读取，不再依赖另外安装或启用原皮肤。
 
-本版本带来蓝白御姐主立绘、深海宫殿、9.6 秒从容入场，以及尊重系统减少动态效果的 2.6 秒静态开场。原蓝发 Q 版从本机已安装的 maid-atelier 包读取，原皮肤可以停用；Q 版缺失不会隐藏主立绘。
-
-修复 DSH 客户端加载器入口，使用经过格式校验的经典脚本 factory；保留点击和 Esc 跳过及异常清理。
+- 去掉 maid-atelier 可选依赖，主立绘、宫殿和 Q 版均随包安装。
+- 原 Q 版图片未经修改，保留上善 → ZipZipPipe → Small-tailqwq 署名链与 CC BY-NC-SA 4.0 条件，随包附上许可全文和上游署名原文。
+- 补充无原皮肤情况下 Q 版 GET、HEAD、缓存、哈希、尺寸、许可打包和损坏降级检查，并加入 `npm run verify`。
+- 9.6 秒开场、2.6 秒减少动态效果模式、点击或 Esc 跳过保持原行为。窗口内容区域宽度 ≤720px 或高度 <520px 时仍会按布局规则隐藏 Q 版。
 
 ## 下载与升级
 
-下载 dsh-boot-0.3.0.tgz 后运行：
+下载 `dsh-boot-0.3.1.tgz`，在原 profile 运行：
 
 ```bash
-dsh plugin --profile desktop add ./dsh-boot-0.3.0.tgz
+dsh plugin --profile desktop add ./dsh-boot-0.3.1.tgz
 ```
 
-从 dsh-plugin-boot-whale-maid 升级时先备份配置并停用旧包；新旧包只启用一个。详见 docs/MIGRATION.md。安装后完整退出并重新启动 DSH。没有发布到 npm。
+将 desktop 换成自己的 profile 名称，安装后完整退出并重新打开 DSH。包名不变，从 0.3.0 升级无需迁移配置；从旧包名升级参考 docs/MIGRATION.md。没有发布到 npm。
 
-## 最终产物
+## 验证
 
-- 5,096,079 字节，22 个文件，仅携带两张本项目生成的 PNG。
-- SHA-256：8E57A14F2AE21DD93D678C2A00DD5F1D453DF9CC4CE1642B807C6977DFAEEB08
-- 最终 tgz 解包后：429/429 动画断言、67/67 smoke、23/23 素材与路由检查通过，经典脚本 factory 格式通过。
-- 独立浏览器核对 dsh-boot 加载器 ID、“深度求索”四字、DEEPSEEK、主立绘与原 Q 版正常解码，真实截图已查看。
-- 用户机器此前安装的 0.2.4 文件及素材读取检查通过；本次短包名 0.3.0 尚未迁移安装，实际 DSH 重启验收待完成。
+- 最终 tgz 解包后，在没有 `node_modules` 或原皮肤包的目录运行 `npm run verify`：429/429 动画断言、67/67 smoke、36/36 素材与路由检查通过，客户端构建与经典脚本格式检查通过。
+- 安装包包含 Q 版 WebP 原图（91,476 字节）和完整许可、署名文件；图片哈希与原版本引用的图片一致。
+- 下载文件校验值见附件 `SHA256SUMS.txt`。
+- 本次未在用户 DSH 中安装或重启；完整开机画面的实机验收仍需升级后进行。
 
-代码 MIT；原 Q 版不在 tgz 内，其运行时读取和含 Q 版截图保留 CC BY-NC-SA 4.0 条件及署名，详见 LICENSE 和 docs/ATTRIBUTION.md。
+代码 MIT；原 Q 版及含 Q 版的预览截图保留 CC BY-NC-SA 4.0 条件，详见 LICENSE、LICENSE-ARTWORK、docs/ATTRIBUTION.md 和 docs/UPSTREAM-NOTICE。

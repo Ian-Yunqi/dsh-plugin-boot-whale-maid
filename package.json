@@ -1,6 +1,6 @@
 {
   "name": "dsh-boot",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "深度求索开场：DSH 深海宫殿与蓝白鲸鱼女仆启动动画，可点击或 Esc 跳过。",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -23,6 +23,8 @@
     "docs/assets.json",
     "docs/ART-NOTES.md",
     "docs/ATTRIBUTION.md",
+    "docs/UPSTREAM-NOTICE",
+    "LICENSE-ARTWORK",
     "README.md",
     "LICENSE",
     "docs/LESSONS.md",
@@ -59,8 +61,7 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "react": "^18.2.0",
-    "@smalltailqwq/dsh-client-ui-skin-maid-atelier": "^0.1.7"
+    "react": "^18.2.0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": {
@@ -68,16 +69,13 @@
     },
     "react": {
       "optional": true
-    },
-    "@smalltailqwq/dsh-client-ui-skin-maid-atelier": {
-      "optional": true
     }
   },
   "scripts": {
     "check": "node --check lib/index.js && node --check lib/client.js && node --check lib/client.dsh.js && node scripts/build-client.mjs --check",
     "smoke": "node scripts/smoke.mjs",
     "assert": "node scripts/assert.mjs",
-    "verify": "npm run check && npm run smoke && npm run assert && npm run check:client-format",
+    "verify": "npm run check && npm run smoke && npm run assert && npm run check:client-format && npm run check:artwork",
     "pack:release": "npm pack --cache .npm-cache",
     "check:client-format": "node scripts/check-client-format.mjs",
     "build:client": "node scripts/build-client.mjs",

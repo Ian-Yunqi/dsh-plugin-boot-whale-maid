@@ -12,12 +12,12 @@ A deep-sea whale-maid startup animation for DeepSeek Harness. Click or press Esc
 
 ## 下载与安装
 
-版本 **0.3.0**，包名已由 `dsh-plugin-boot-whale-maid` 精简为 **`dsh-boot`**。开场标题仍为“深度求索”，英文副标题为 DEEPSEEK。
+版本 **0.3.1**，包名已由 `dsh-plugin-boot-whale-maid` 精简为 **`dsh-boot`**。开场标题仍为“深度求索”，英文副标题为 DEEPSEEK。本版将蓝发 Q 版图片随包携带，只安装本插件即可显示，无需另外安装 maid-atelier 皮肤。
 
-从 [GitHub Releases](https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid/releases) 下载 `dsh-boot-0.3.0.tgz`，然后运行：
+从 [GitHub Releases](https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid/releases) 下载 `dsh-boot-0.3.1.tgz`，然后运行：
 
 ```bash
-dsh plugin --profile desktop add ./dsh-boot-0.3.0.tgz
+dsh plugin --profile desktop add ./dsh-boot-0.3.1.tgz
 ```
 
 安装后完整退出并重新打开 DSH。如果使用其他 profile，请把 desktop 换成对应名称。GitHub 仓库地址暂沿用旧名以保留已有链接；没有发布到 npm，安装时请使用下载的 tgz 文件。
@@ -27,7 +27,7 @@ dsh plugin --profile desktop add ./dsh-boot-0.3.0.tgz
 ## 画面与节奏
 
 - 主立绘和无文字宫殿随包安装；长鹅蛋脸、沉静蓝眼、冷白长裙与深靛蓝垂袖。
-- 原蓝发 Q 版从本机已安装的 `@smalltailqwq/dsh-client-ui-skin-maid-atelier` 读取，原皮肤可以停用；未安装时只隐藏 Q 版，不影响主立绘。
+- 原蓝发 Q 版以未修改的原图随包安装，不再依赖用户本机的原皮肤包。窗口内容区域宽度 ≤720px 或高度 <520px 时，为避免拥挤仍会隐藏 Q 版；放大窗口后重新启动开场即可。
 - 素材准备完成后播放 9.6 秒；最后 1.2 秒渐出。点击或 Esc 立即清理舞台。
 - 系统开启“减少动态效果”时显示 2.6 秒静态开场，保留人物，不播放幕布与粒子运动。
 - 主立绘或宫殿加载失败会撤掉遮罩，使用简短标题降级，避免挡住工作界面。
@@ -50,6 +50,6 @@ node scripts/check-artwork.mjs
 
 ## 素材与许可
 
-代码采用 MIT。主立绘、宫殿为本项目通过内置 imagegen 生成和编辑的素材；参考图来源尚未完整确认，不宣称对参考图或相关角色拥有独占权利。原 Q 版不随安装包分发，仍保留上善 → ZipZipPipe → Small-tailqwq 的署名与 CC BY-NC-SA 4.0 条件。包含原 Q 版的预览截图遵循同一署名、非商业与相同方式共享条件。
+代码采用 MIT。主立绘、宫殿为本项目通过内置 imagegen 生成和编辑的素材；参考图来源尚未完整确认，不宣称对参考图或相关角色拥有独占权利。随包分发的原 Q 版保留上善 → ZipZipPipe → Small-tailqwq 的署名与 CC BY-NC-SA 4.0 条件；原图字节未经修改。包含原 Q 版的预览截图遵循同一署名、非商业与相同方式共享条件。
 
-详见 [LICENSE](LICENSE) 和 [素材署名](docs/ATTRIBUTION.md)。
+详见 [LICENSE](LICENSE)、[素材署名](docs/ATTRIBUTION.md)、[美术许可全文](LICENSE-ARTWORK) 和 [上游署名原文](docs/UPSTREAM-NOTICE)。

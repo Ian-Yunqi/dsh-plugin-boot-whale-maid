@@ -63,7 +63,7 @@
         独立动作预览用的是本插件自制的 SVG 占位图形，只表达主立绘、Q 版与宫殿的
         <em>体量与位置</em>，因此能看完整构图、幕布、标题、灯光、时间线与跳过行为，
         <strong>看不到真实立绘</strong>。真实素材必须在实际提供
-        <code>/boot-assets/whale-maid/</code> 的同源环境（已启用 maid-atelier 皮肤插件的 DSH）里验收。
+        <code>/boot-assets/whale-maid/</code> 的同源环境（已启用 dsh-boot 的 DSH）里验收。
     </div>
 
     <div class="panel">
@@ -85,7 +85,7 @@
         </div>
         <div class="card">
             <h3>模式 2 · 真实素材验收</h3>
-            <p>只有在真正提供该素材路由的同源环境里才有意义，例如已安装并启用 maid-atelier 皮肤插件的 DSH：
+            <p>只有在真正提供该素材路由的同源环境里才有意义，例如已安装并启用 dsh-boot 的 DSH：
             打开 <code>http://127.0.0.1:19387/boot-assets/whale-maid/&lt;hash&gt;.png</code> 应返回图片。</p>
             <p class="note">普通静态服务器不等于素材路由存在。仅当路由返回 404 时，动画进入 ≤1s 的降级幕 —— 这是预期分支，不是错误。</p>
         </div>
