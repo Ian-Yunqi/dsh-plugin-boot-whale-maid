@@ -1,21 +1,7 @@
-dsh-plugin-boot-whale-maid — LICENSE
-====================================
+dsh-boot — layered content notice
 
-TWO SEPARATE LICENCES, APPLIED TO TWO SEPARATE THINGS.
-The software licence below covers the plug-in's CODE. It does NOT cover the
-artwork, and it cannot: the artwork is third-party work that this package
-merely references by URL. Read both sections before redistributing anything.
-
-
--------------------------------------------------------------------------------
-1. SOFTWARE / CODE — MIT
--------------------------------------------------------------------------------
-
-Applies to: every file in this package EXCEPT the artwork described in
-section 2 — i.e. lib/index.js, lib/client.js, scripts/, the YAML and JSON
-files, and this repository's Markdown. The artwork is not covered here, and
-no file of the upstream artworks package is redistributed inside this
-package.
+SOFTWARE / CODE — MIT
+Applies to code, tests and documentation. Existing contributors' copyright notice is retained.
 
 Copyright (c) 2026 dsh-plugin-boot-whale-maid contributors
 
@@ -37,66 +23,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Note on scope: the choice above covers only the code written for this
-plug-in. It is the same layering the source artwork package uses, where its
-own code is MIT while its art is CC BY-NC-SA 4.0 — the code licence never
-reaches across into the artwork in either package.
 
+AI-generated artwork
+The two bundled PNGs were generated and edited with the built-in imagegen tool for this user's approved design. They are not copies of the upstream skin files. This notice does not claim exclusive copyright or transfer the upstream skin artwork licence onto the generated PNGs. See docs/ATTRIBUTION.md for provenance.
 
--------------------------------------------------------------------------------
-2. ARTWORK — CC BY-NC-SA 4.0 (NOT covered by the MIT licence above)
--------------------------------------------------------------------------------
-
-The boot animation displays six WebP images whose copyright belongs to their
-respective authors, NOT to this package. They are licensed
-**Attribution-NonCommercial-ShareAlike 4.0 International** (CC BY-NC-SA 4.0).
-
-  上善 → ZipZipPipe → Small-tailqwq
-
-  1. 上善 — 一创 (initial creation): the original whale-girl character design.
-     https://www.pixiv.net/users/62155430
-
-  2. ZipZipPipe — 二创 (secondary creation): the maid whale-girl redesign that
-     adds the DeepSeek elements, built on 上善's whale-girl.
-     https://www.pixiv.net/users/18604994
-
-  3. Small-tailqwq — 三创 (tertiary creation): the DeepSeek-element redesign
-     the source skin actually ships (dsh-external/dsh-deep-whale).
-
-Full attribution text, the verbatim upstream NOTICE and LICENSE-ARTWORK
-excerpts, the three licence elements and their concrete obligations are in
-**docs/ATTRIBUTION.md** in this package. That file is authoritative for the
-artwork; this section only states the licence name and the credit chain.
-
-How this package uses the artwork — and what that does NOT mean:
-
-  * The images are loaded at RUNTIME from the same-origin route
-    `/skin-assets/maid-atelier/<hash>.webp`, which the maid-atelier skin
-    plug-in registers on the host. This package does not copy, inline,
-    re-host or redistribute any artwork file or byte. The data: URIs used by
-    the standalone `scripts/preview.html` motion preview are synthetic
-    placeholder shapes drawn for this package, not the artwork.
-  * Referencing the artwork by URL does NOT waive, satisfy or exempt any
-    obligation under CC BY-NC-SA 4.0. Attribution (BY), NonCommercial (NC)
-    and ShareAlike (SA) all still apply in full to how this package displays
-    and uses it. Providing a URI/hyperlink to the material is a way to
-    *meet* the attribution requirement, never a reason to be *free* of it.
-  * NC: this package and its distribution must not be used for commercial
-    advantage or monetary compensation without separate permission from the
-    rightsholders.
-  * SA: if you redistribute the artwork or anything derived from it — e.g. by
-    inlining it, recolouring it, redrawing it or shipping an offline copy —
-    that redistributed part must be licensed under CC BY-NC-SA 4.0 or a
-    BY-NC-SA compatible licence, with the licence text or a link included.
-  * This package did not modify the artwork (only proportional cover/contain
-    fitting and positioning, no recolouring, no cropping of faces, no
-    stretching), so it is a user of the artwork, not its licensor, and it
-    claims no copyright over it and grants no sublicence to it.
-  * The artwork route exists only while the maid-atelier skin plug-in is
-    installed and enabled; when it is absent the route answers 404 and the
-    animation degrades to a CSS/SVG curtain. That runtime dependency changes
-    none of the obligations above.
-
-If your use case is commercial, or involves redistributing the artwork at
-scale, obtain permission from the rightsholders listed above. Nothing in this
-file is legal advice.
+Referenced upstream chibi — CC BY-NC-SA 4.0
+The blue-haired chibi is read from the locally installed maid-atelier package at runtime; its skin need not be enabled. It is not included as bytes in this distribution. It retains its upstream attribution and non-commercial/share-alike conditions; the software MIT grant does not relicense it. See docs/ATTRIBUTION.md.

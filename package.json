@@ -1,8 +1,8 @@
 {
-  "name": "dsh-plugin-boot-whale-maid",
-  "version": "0.1.0",
-  "description": "DeepSeek Harness boot stage: a full-screen whale-maid curtain-up for the splash, then a fade to the real UI. Host half injects a synchronous first frame that covers DSH's native [data-dsh-boot] card before the shell paints it; the Web client half mounts the stage in a shadow root.",
-  "license": "MIT AND CC-BY-NC-SA-4.0",
+  "name": "dsh-boot",
+  "version": "0.3.0",
+  "description": "深度求索开场：DSH 深海宫殿与蓝白鲸鱼女仆启动动画，可点击或 Esc 跳过。",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -10,20 +10,24 @@
       "default": "./lib/index.js"
     },
     "./client": {
-      "default": "./lib/client.js"
+      "default": "./lib/client.dsh.js"
     },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
     "lib",
+    "assets",
     "cordis.patch.yml",
     "scripts",
-    "docs",
+    "docs/assets.json",
+    "docs/ART-NOTES.md",
+    "docs/ATTRIBUTION.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "docs/LESSONS.md",
+    "docs/MIGRATION.md"
   ],
-  "//files-note": "docs/ ships because scripts/smoke.mjs and scripts/assert.mjs both read docs/assets.json, so the package must be able to verify itself after unpacking. The review screenshots under docs/shots/ are excluded by .npmignore (see that file) because they document the build for the repository rather than serving the installed plugin. Nothing from the source skin package is ever bundled.",
   "engines": {
     "node": "^22.19.0 || >=24"
   },
@@ -36,13 +40,6 @@
       "inject": []
     }
   },
-  "scripts": {
-    "check": "node --check lib/index.js && node --check lib/client.js",
-    "smoke": "node scripts/smoke.mjs",
-    "assert": "node scripts/assert.mjs",
-    "verify": "npm run check && npm run smoke && npm run assert",
-    "pack:release": "npm pack --cache .npm-cache"
-  },
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -54,11 +51,16 @@
     "whale-girl",
     "maid",
     "startup-animation",
-    "web-ui"
+    "web-ui",
+    "deepseek",
+    "深度求索",
+    "鲸鱼女仆",
+    "开机动画"
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "@smalltailqwq/dsh-client-ui-skin-maid-atelier": "^0.1.7"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": {
@@ -66,6 +68,27 @@
     },
     "react": {
       "optional": true
+    },
+    "@smalltailqwq/dsh-client-ui-skin-maid-atelier": {
+      "optional": true
     }
+  },
+  "scripts": {
+    "check": "node --check lib/index.js && node --check lib/client.js && node --check lib/client.dsh.js && node scripts/build-client.mjs --check",
+    "smoke": "node scripts/smoke.mjs",
+    "assert": "node scripts/assert.mjs",
+    "verify": "npm run check && npm run smoke && npm run assert && npm run check:client-format",
+    "pack:release": "npm pack --cache .npm-cache",
+    "check:client-format": "node scripts/check-client-format.mjs",
+    "build:client": "node scripts/build-client.mjs",
+    "check:artwork": "node scripts/check-artwork.mjs"
+  },
+  "homepage": "https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ian-Yunqi/dsh-plugin-boot-whale-maid/issues"
   }
 }

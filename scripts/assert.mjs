@@ -1,5 +1,5 @@
 /**
- * dsh-plugin-boot-whale-maid --offline assertions for the client animation half.
+ * dsh-boot --offline assertions for the client animation half.
  *
  * IMPORTANT SCOPE NOTE
  * --------------------
@@ -10,7 +10,7 @@
  * scripts/preview.html or an installed DSH boot, by a human.
  *
  * Every clock in here is a controllable fake: nothing waits for the real
- * 6.4 s timeline. Run with `node dsh-plugin-boot-whale-maid/scripts/assert.mjs`.
+ * 6.4 s timeline. Run with `node dsh-boot/scripts/assert.mjs`.
  */
 
 import { readFileSync } from 'node:fs';
@@ -404,7 +404,7 @@ function makeEnv(domOptions) {
     const clock = new FakeClock();
     doc._probes = [];
     // Absolute-clock mark at which this stage's t=0 sits. Cases that assert the
-    // documented 1200 ms / 6400 ms budgets advance to `clock.origin + budget`
+    // documented 1200 ms / 9600 ms budgets advance to `clock.origin + budget`
     // instead of relying on relative ticks.
     clock.origin = clock.now;
     return { doc, win, clock };
@@ -445,7 +445,7 @@ function loadArtwork(env, ok) {
 /**
  * Advance the fake clock to an absolute time, given as "ms since the stage's own
  * zero mark" (see `clock.origin`). This is what lets a case assert the exact
- * 1200 ms preload budget or the 6400 ms timeline end. The final 1 ms step makes
+ * 1200 ms preload budget or the 9600 ms timeline end. The final 1 ms step makes
  * sure a task scheduled exactly *at* that mark has run before the assertion.
  */
 function at(env, ms) {
@@ -799,23 +799,23 @@ section('2. asset URLs + segment table');
         eq(key + ' width matches docs/assets.json', asset.width, doc.width);
         eq(key + ' height matches docs/assets.json', asset.height, doc.height);
         check(key + ' url is a same-origin hash route',
-            /^\/skin-assets\/maid-atelier\/[a-f0-9]{64}\.webp$/.test(asset.url), asset.url);
-        check(key + ' uid appears literally in lib/client.js', source.indexOf(asset.hash + '.webp') !== -1);
+            /^(?:\/boot-assets\/whale-maid\/[a-f0-9]{64}\.png|\/boot-assets\/whale-maid\/[a-f0-9]{64}\.webp)$/.test(asset.url), asset.url);
+        check(key + ' uid appears literally in lib/client.js', source.indexOf(asset.hash + (key === 'chibi' ? '.webp' : '.png')) !== -1);
     }
     check('vision is documented but not staged', BOOT_ASSETS.vision.used === false);
     const staged = ids.filter((k) => BOOT_ASSETS[k].used !== false).map((k) => BOOT_ASSETS[k].url);
     eq('exactly 5 staged assets', staged.length, 5);
     check('no path escapes the same-origin asset route',
-        staged.every((u) => u.indexOf('/skin-assets/maid-atelier/') === 0));
+        staged.every((u) => u.startsWith('/boot-assets/whale-maid/') || u === BOOT_ASSETS.chibi.url));
 
     eq('segment count', BOOT_SEGMENTS.length, 8);
     const ats = BOOT_SEGMENTS.map((s) => s.at);
-    check('segment start times are 0/500/1800/2050/3200/4400/5600/6400',
-        JSON.stringify(ats) === JSON.stringify([0, 500, 1800, 2050, 3200, 4400, 5600, 6400]),
+    check('segment start times are 0/750/2700/3075/4800/6600/8400/9600',
+        JSON.stringify(ats) === JSON.stringify([0, 750, 2700, 3075, 4800, 6600, 8400, 9600]),
         JSON.stringify(ats));
-    eq('last segment ends the show at 6400 ms', BOOT_SEGMENTS[7].end, 6400);
-    eq('right mascot is delayed exactly 250 ms after the main sprite',
-        BOOT_SEGMENTS[3].at - BOOT_SEGMENTS[2].at, 250);
+    eq('last segment ends the show at 9600 ms', BOOT_SEGMENTS[7].end, 9600);
+    eq('right mascot is delayed exactly 375 ms after the main sprite',
+        BOOT_SEGMENTS[3].at - BOOT_SEGMENTS[2].at, 375);
     eq('right mascot enters together with the main sprite landing (same end)',
         BOOT_SEGMENTS[3].end, BOOT_SEGMENTS[2].end);
     const ids2 = BOOT_SEGMENTS.map((s) => s.id);
@@ -849,16 +849,15 @@ section('3. factory, mount and shadow structure');
     eq('stage starts on segment 0', inShadow(doc, '.stage').getAttribute('data-s0'), '');
     check('left main sprite exists with the maid-left url',
         (() => { const n = inShadow(doc, '.wm-maid-left'); return !!n && n.getAttribute('src') === BOOT_ASSETS['maid-left'].url; })());
-    check('right maid sprite exists',
-        !!inShadow(doc, '.wm-maid-right') && inShadow(doc, '.wm-maid-right').getAttribute('src') === BOOT_ASSETS['maid-right'].url);
+    check('single protagonist has no duplicated right portrait', !inShadow(doc, '.wm-maid-right'));
     check('right Q-version mascot exists with the chibi url',
         !!inShadow(doc, '.wm-chibi') && inShadow(doc, '.wm-chibi').getAttribute('src') === BOOT_ASSETS.chibi.url);
     check('title element exists', !!inShadow(doc, '.wm-title'));
-    eq('title glyph count', inShadowAll(doc, '.wm-title-cn span').length, 6);
+    eq('title glyph count', inShadowAll(doc, '.wm-title-cn span').length, 4);
     eq('title text', inShadow(doc, '.wm-title-cn').textContent, '');
     eq('glyph 1', inShadowAll(doc, '.wm-title-cn span')[0].textContent, '\u6df1');
-    eq('glyph 6', inShadowAll(doc, '.wm-title-cn span')[5].textContent, '\u574a');
-    eq('subtitle text', inShadow(doc, '.wm-title-en').textContent, 'ABYSSAL MAID ATELIER');
+    eq('title spells the requested name', inShadowAll(doc, '.wm-title-cn span').map(n=>n.textContent).join(''), '深度求索');
+    eq('subtitle text', inShadow(doc, '.wm-title-en').textContent, 'DEEPSEEK');
     eq('particle layer exists', inShadowAll(doc, '.wm-particles g').length, 9);
     check('tail silhouette layer exists', !!inShadow(doc, '.wm-tail'));
     check('tail is drawn as inline SVG (no extra raster)',
@@ -875,7 +874,7 @@ section('3. factory, mount and shadow structure');
     check('vision artwork is never requested by the stage',
         inShadow(doc, 'style').textContent.indexOf(BOOT_ASSETS.vision.url) === -1);
     check('the stage only requests the five staged asset urls',
-        boot.requests.length === 5 && boot.requests.every((u) => u.indexOf('/skin-assets/maid-atelier/') === 0),
+        boot.requests.length === 5 && boot.requests.every((u) => u.startsWith('/boot-assets/whale-maid/') || u === BOOT_ASSETS.chibi.url),
         boot.requests.join(','));
     check('listeners are installed on the document for click and keydown',
         doc.listenerCount('click') >= 1 && doc.listenerCount('keydown') >= 1);
@@ -931,27 +930,34 @@ section('4. timeline driven segment by segment');
     eq('five artwork probes are open', env.doc._probes.length, 5);
     eq('still waiting on artwork', boot.state, 'preload');
     env.doc.settleImages(true);
+    const timelineZero = clock.now;
     eq('state becomes playing after the assets resolve', boot.state, 'playing');
     eq('nothing has played yet: the timeline starts at its own zero', boot.fired.length, 0);
     at(env, 0);
     eq('segment 0 fired first', boot.fired[0] && boot.fired[0].id, 'curtain-rise');
     const expected = [
         { at: 0, id: 'curtain-rise' },
-        { at: 500, id: 'curtain-open' },
-        { at: 1800, id: 'maid-left-enter' },
-        { at: 2050, id: 'maid-right-enter' },
-        { at: 3200, id: 'title-reveal' },
-        { at: 4400, id: 'lace-tail' },
-        { at: 5600, id: 'stage-fade-out' },
-        { at: 6400, id: 'finished' },
+        { at: 750, id: 'curtain-open' },
+        { at: 2700, id: 'maid-left-enter' },
+        { at: 3075, id: 'maid-right-enter' },
+        { at: 4800, id: 'title-reveal' },
+        { at: 6600, id: 'lace-tail' },
+        { at: 8400, id: 'stage-fade-out' },
+        { at: 9600, id: 'finished' },
     ];
 
-    at(env, 6390);
+    clock.tick(timelineZero + 8399 - clock.now);
+    eq('natural fade has not started at 8399 ms', hostsIn(doc)[0].getAttribute('data-state'), 'visible');
+    clock.tick(1);
+    eq('natural fade starts at 8400 ms', hostsIn(doc)[0].getAttribute('data-state'), 'fade-out');
+    eq('real host receives phase 6', hostsIn(doc)[0].getAttribute('data-phase'), '6');
+    eq('natural fade duration is 1200 ms', hostsIn(doc)[0].style.getPropertyValue('transition-duration'), '1200ms');
+    at(env, 9590);
     eq('seven segments had fired just before the declared end', boot.fired.length, 7);
     check('the show is still on screen one millisecond before its declared end',
         boot.state === 'playing' && hostsIn(doc).length === 1, boot.state);
-    eq('the host is visible while the show plays', hostsIn(doc)[0].getAttribute('data-state'), 'visible');
-    at(env, 6401);
+    eq('the host is fading before the declared finish', hostsIn(doc)[0].getAttribute('data-state'), 'fade-out');
+    at(env, 9601);
     eq('all eight segments fired', boot.fired.length, 8);
     let allOk = true;
     for (let i = 0; i < expected.length; i += 1) {
@@ -963,7 +969,7 @@ section('4. timeline driven segment by segment');
         }
     }
     check('segment ids and declared times all match the table', allOk);
-    eq('last segment fired at 6400 ms on the fake clock', boot.fired[7].firedAt, 6400);
+    eq('last segment fired at 9600 ms on the fake clock', boot.fired[7].firedAt, 9600);
     eq('stage flag of the last stage segment', snapshots[6] && snapshots[6].s6, '');
 
     // --- reveal is now MONOTONIC -------------------------------------------
@@ -978,23 +984,11 @@ section('4. timeline driven segment by segment');
         snapshots[1].curtain === 'open'
         && snapshots.slice(1).every((s) => s.curtain === 'open'),
         snapshots.map((s) => s.curtain).join(','));
-    check('the host was visible for every segment of the run',
-        snapshots.every((s) => s.hostState === 'visible'),
+    check('the host is visible until the fade-out segment',
+        snapshots.slice(0, 6).every((s) => s.hostState === 'visible') && snapshots[6].hostState === 'fade-out',
         snapshots.map((s) => s.hostState).join(','));
 
-    // --- the 800 ms fade-out, then unmount ---------------------------------
-    // --- the 800 ms fade-out, then unmount ---------------------------------
-    eq('the natural end goes through the fade-out state first', boot.state, 'skipping');
-    eq('the host is in fade-out right after the last segment',
-        hostsIn(doc)[0].getAttribute('data-state'), 'fade-out');
-    at(env, 7190);
-    check('the stage is still mounted during the fade (invisible, not yet gone)',
-        hostsIn(doc).length === 1, 'hosts=' + hostsIn(doc).length);
-    eq('the stage is opacity-pinned to 0 for the fade', hostsIn(doc)[0].style.getPropertyValue('opacity'), '0');
-    eq('the fade duration is the declared 800 ms',
-        hostsIn(doc)[0].style.getPropertyValue('transition-duration'), '800ms');
-    at(env, 7201);
-    eq('the stage unmounts once the fade is over', boot.state, 'ended');
+    eq('natural completion occurs at 9600 ms, without a second fade', boot.state, 'ended');
     eq('host removed after the natural end', hostsIn(doc).length, 0);
     check('first-paint class cleared after the natural end', firstPaintCleared(doc));
     eq('no pending timer after the natural end', clock.pending, 0);
@@ -1016,11 +1010,11 @@ section('5. click / Escape in the first-paint phase');
 
     // click lands before the clock advanced at all
     doc.dispatchEvent({ type: 'click', target: doc.body });
-    eq('state is skipping immediately after the click', boot.state, 'skipping');
-    check('fade-out flag is already set', hostsIn(doc)[0].getAttribute('data-state') === 'fade-out');
+    eq('click ends synchronously, without advancing the clock', boot.state, 'skipped');
+    eq('click removes the curtain synchronously', hostsIn(doc).length, 0);
     eq('no segment could fire after the click', boot.fired.length, 0);
     clock.tick(139);
-    check('still inside the 150 ms budget', boot.state === 'skipping', boot.state);
+    check('a delayed clock cannot bring the skipped curtain back', boot.state === 'skipped', boot.state);
     clock.tick(2);
     eq('finished within 150 ms', boot.state, 'skipped');
     eq('end() hook called exactly once', endCalls, 1);
@@ -1036,7 +1030,7 @@ section('5. click / Escape in the first-paint phase');
     const boot2 = createBootShow({ document: env2.doc, window: env2.win, clock: env2.clock });
     env2.clock.tick(5);
     env2.doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
-    eq('Escape skips the preload phase', boot2.state, 'skipping');
+    eq('Escape ends the preload phase synchronously', boot2.state, 'skipped');
     env2.clock.tick(150);
     eq('Escape finished inside 150 ms', boot2.state, 'skipped');
     eq('Escape called end() once', endCalls2, 1);
@@ -1055,13 +1049,13 @@ section('6. click / Escape while playing');
     const boot = createBootShow({ document: doc, window: win, clock });
     clock.tick(50);
     doc.settleImages(true);
-    clock.tick(2200);
-    eq('playing by 2.2 s', boot.state, 'playing');
+    clock.tick(3400);
+    eq('playing by 3.4 s', boot.state, 'playing');
     check('segment 3 (right mascot) already fired', boot.fired.some((f) => f.id === 'maid-right-enter'));
     const firedBefore = boot.fired.length;
 
     doc.dispatchEvent({ type: 'click', target: doc.body });
-    eq('click during playback enters the skipping state', boot.state, 'skipping');
+    eq('click during playback ends synchronously', boot.state, 'skipped');
     eq('later segments are cancelled, not played', boot.fired.length, firedBefore);
     clock.tick(20);
     eq('title segment never fires after the skip',
@@ -1081,7 +1075,7 @@ section('6. click / Escape while playing');
     env2.clock.tick(3000);
     eq('second stage is playing', boot2.state, 'playing');
     env2.win.dispatchEvent({ type: 'keydown', key: 'Escape' });
-    eq('window Escape also skips', boot2.state, 'skipping');
+    eq('window Escape also ends synchronously', boot2.state, 'skipped');
     env2.clock.tick(150);
     eq('window Escape finished', boot2.state, 'skipped');
     eq('second stage left no host', hostsIn(env2.doc).length, 0);
@@ -1103,11 +1097,11 @@ section('7. prefers-reduced-motion');
     clock.tick(5);
     eq('reduced branch entered', boot.state, 'reduced');
     eq('no timeline segment played', boot.fired.length, 0);
-    eq('degrade mode flag on the stage', inShadow(doc, '.stage').getAttribute('data-mode'), 'degrade');
+    eq('still-art mode flag on the stage', inShadow(doc, '.stage').getAttribute('data-mode'), 'still');
     check('no travel in the degraded stylesheet',
         inShadow(doc, 'style').textContent.indexOf('.stage[data-mode="degrade"] .wm-maid') !== -1);
-    clock.tick(400);
-    eq('cleaned up well under a second', boot.state, 'reduced-motion');
+    clock.tick(2800);
+    eq('cleaned up after the readable still interval', boot.state, 'reduced-motion');
     eq('end() called', endCalls, 1);
     eq('host removed', hostsIn(doc).length, 0);
     check('first-paint class cleared', firstPaintCleared(doc));
@@ -1181,7 +1175,7 @@ section('9. artwork timeout -> degraded curtain');
 
     // a load event arriving after the budget may not start the show either
     env.doc.settleImages(true);
-    env.clock.tick(500);
+    env.clock.tick(750);
     eq('late asset cannot restart the timeline', boot.fired.length, 0);
     eq('still terminal', boot.state, 'degraded');
 
@@ -1415,12 +1409,12 @@ section('13. 550c mutual exclusion (early and late)');
     eq('a late window.__dsh550cBoot also makes us yield', bootD.state, 'yield-550c');
     eq('late global yield removes our host', hostsIn(d.doc).length, 0);
 
-    // the default 8000 ms cap: stalled assets are already handled by the 1200 ms
+    // the default 14000 ms cap: stalled assets are already handled by the 1200 ms
     // budget, so what this proves is that the curtain cannot outlive its cap.
     const e = makeEnv();
     const bootE = createBootShow({ document: e.doc, window: e.win, clock: e.clock });
     e.clock.tick(8041);
-    check('a stalled stage is long gone by the 8000 ms cap',
+    check('a stalled stage is long gone by the 14000 ms cap',
         bootE.state === 'degraded' && e.clock.pending === 0, bootE.state);
     check('the hard cap clears the first-paint class', firstPaintCleared(e.doc));
     eq('the hard cap removes the host', hostsIn(e.doc).length, 0);
@@ -1491,7 +1485,7 @@ section('15. swap hook + scripts/preview.html');
         && seen.some((r) => r.indexOf('palace-') === 0),
         seen.join(','));
     check('the declared request list still reports the real same-origin routes',
-        boot.requests.length === 5 && boot.requests.every((u) => /^\/skin-assets\/maid-atelier\/[a-f0-9]{64}\.webp$/.test(u)),
+        boot.requests.length === 5 && boot.requests.every((u) => /^(?:\/boot-assets\/whale-maid\/[a-f0-9]{64}\.png|\/boot-assets\/whale-maid\/[a-f0-9]{64}\.webp)$/.test(u)),
         boot.requests.join(','));
     check('the swapped source is what actually loads',
         boot.loaded.every((u) => u.indexOf('data:image/svg+xml,') === 0), boot.loaded.join(','));
@@ -1520,9 +1514,9 @@ section('15. swap hook + scripts/preview.html');
     check('preview.html never re-hosts the original artwork',
         (() => {
             const scriptPart = html.split('<script>').slice(1).join('<script>');
-            return scriptPart.indexOf('.webp') === -1
-                && !/<img\b[^>]*\.webp/i.test(html)
-                && !/url\(\s*["']?[^)"']*\.webp/i.test(html);
+            return scriptPart.indexOf('.png') === -1
+                && !/<img\b[^>]*\.png/i.test(html)
+                && !/url\(\s*["']?[^)"']*\.png/i.test(html);
         })(),
         'found an artwork reference in preview code');
     check('preview.html only loads itself and the local client module',
@@ -1604,12 +1598,11 @@ section('15. swap hook + scripts/preview.html');
         at({ clock: pClock }, 0);
         pDoc.settleImages(true);
         eq('the preview stage plays the same timeline', pageBoot.state, 'playing');
-        pClock.tick(6401);
+        pClock.tick(8401);
+        eq('preview starts fading during segment 6', hostsIn(pDoc)[0].getAttribute('data-state'), 'fade-out');
+        eq('preview fades for the declared 1200 ms', hostsIn(pDoc)[0].style.getPropertyValue('transition-duration'), '1200ms');
+        pClock.tick(1200);
         eq('the preview stage runs all eight segments', pageBoot.fired.length, 8);
-        eq('the preview end also goes through the fade-out first', pageBoot.state, 'skipping');
-        eq('the preview stage fades for the declared 800 ms',
-            hostsIn(pDoc)[0].style.getPropertyValue('transition-duration'), '800ms');
-        pClock.tick(801);
         eq('the preview stage ends and cleans up', pageBoot.state, 'ended');
         eq('the preview stage ends and cleans up', pageBoot.state, 'ended');
         eq('the preview stage left no host behind', hostsIn(pDoc).length, 0);
@@ -1738,8 +1731,8 @@ section('16. stylesheet rules: monotonic reveal + irreversible curtain');
     eq('a host with no phase attribute at all is still hidden',
         cascade(css, {}, wide, ':host').get('opacity'), '0');
     eq('the host is transparent at phase 6', hostAt(6).get('opacity'), '0');
-    eq('the host fades over the declared 800 ms',
-        cascade(css, {}, wide, ':host').get('transition'), 'opacity 800ms ease-out');
+    eq('the host fades over the declared 1200 ms',
+        cascade(css, {}, wide, ':host').get('transition'), 'opacity 1200ms ease-out');
 
     // --- the degraded and reduced curtains are the same still card ----------
     const degradeCell = cell({ mode: 'degrade', reveal: true }, '.wm-title-cn span');
@@ -1801,8 +1794,14 @@ section('17. every probed asset must report a decoded bitmap');
     const boot5 = createBootShow({ document: env5.doc, window: env5.win, clock: env5.clock });
     env5.clock.tick(1);
     env5.doc.settleImages((i) => i !== 4);
-    eq('a broken chibi also degrades', boot5.state, 'degrade');
-    eq('a broken chibi plays no segment', boot5.fired.length, 0);
+    eq('an unavailable optional chibi preserves the main animation', boot5.state, 'playing');
+    env5.clock.tick(1);
+    check('the main animation still plays its first segment', boot5.fired.length > 0);
+    eq('only the unavailable chibi is hidden', inShadow(env5.doc, '.wm-chibi').style.getPropertyValue('display'), 'none');
+    check('the main portrait remains mounted when the chibi fails', !!inShadow(env5.doc, '.wm-maid-left'));
+    boot5.dispose();
+    eq('optional failure leaves no timers after dispose', env5.clock.pending, 0);
+    eq('optional failure leaves no overlay after dispose', hostsIn(env5.doc).length, 0);
 
     // 3) the same for the palace plate
     const envPalace = makeEnv();
@@ -1842,16 +1841,22 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     eq('reduced motion never preloads', reducedEnv.doc._probes.length, 0);
     eq('reduced motion is in its own state', reducedBoot.state, 'reduced');
     const reducedStage = inShadow(reducedEnv.doc, '.stage');
-    eq('reduced motion uses the still card', reducedStage.getAttribute('data-mode'), 'degrade');
+    eq('reduced motion uses the artwork still card', reducedStage.getAttribute('data-mode'), 'still');
     eq('reduced motion shows the title (same switch as the degraded curtain)',
         reducedStage.getAttribute('data-reveal'), '1');
     eq('reduced motion is visible while it lasts',
         hostsIn(reducedEnv.doc)[0].getAttribute('data-state'), 'visible');
     const css = stageCssOf(reducedEnv.doc);
+    const stillAttrs = { 'data-mode': 'still', 'data-narrow': '0', 'data-chibi': '1', 'data-reveal': '1' };
+    eq('accessible still artwork shows the new protagonist', cascade(css, stillAttrs, 1920, '.wm-maid-left').get('opacity'), '1');
+    eq('accessible still artwork does not animate the protagonist', cascade(css, stillAttrs, 1920, '.wm-maid-left').get('animation'), 'none');
+    eq('accessible still artwork shows the original chibi', cascade(css, stillAttrs, 1920, '.wm-chibi').get('opacity'), '1');
+    eq('accessible still artwork hides the moving curtain', cascade(css, stillAttrs, 1920, '.wm-curtain').get('display'), 'none');
+    eq('accessible title has no delayed transition', cascade(css, stillAttrs, 1920, '.wm-title-cn span').get('transition'), 'none');
     const stillCard = cascade(css, stageAttrs({ mode: 'degrade', reveal: true }), 1920, '.wm-title-cn span');
     eq('the reduced/degraded title is fully opaque', stillCard.get('opacity'), '1');
     eq('the reduced/degraded title has no travel', stillCard.get('transform'), 'none');
-    reducedEnv.clock.tick(400);
+    reducedEnv.clock.tick(2800);
     eq('reduced motion clears within its short budget', reducedBoot.state, 'reduced-motion');
     eq('reduced motion left no host', hostsIn(reducedEnv.doc).length, 0);
 
@@ -1862,20 +1867,20 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     const capBoot = createBootShow({
         document: capEnv.doc, window: capEnv.win, clock: capEnv.clock, preloadBudgetMs: 20000,
     });
-    at(capEnv, 7980);
+    at(capEnv, 13980);
     eq('one millisecond before the declared cap the stage is still alive',
         capBoot.state, 'preload');
     eq('the host is still visible up to the cap',
         hostsIn(capEnv.doc)[0].getAttribute('data-state'), 'visible');
-    at(capEnv, 8000);
-    eq('the cap fires exactly at 8000 ms, with no extra grace', capBoot.state, 'timeout');
+    at(capEnv, 14000);
+    eq('the cap fires exactly at 14000 ms, with no extra grace', capBoot.state, 'timeout');
     eq('the cap removed the host', hostsIn(capEnv.doc).length, 0);
     eq('the cap left nothing scheduled', capEnv.clock.pending, 0);
     check('the cap landed on the declared boundary',
-        capEnv.clock.now - capEnv.clock.origin >= 8000,
+        capEnv.clock.now - capEnv.clock.origin >= 14000,
         String(capEnv.clock.now - capEnv.clock.origin));
-    check('the default cap is the declared 8000 ms in the source',
-        /const MAX_LIFETIME_MS = 8000;/.test(readFileSync(resolvePath(PKG_ROOT, 'lib/client.js'), 'utf8')));
+    check('the default cap is the declared 14000 ms in the source',
+        /const MAX_LIFETIME_MS = 14000;/.test(readFileSync(resolvePath(PKG_ROOT, 'lib/client.js'), 'utf8')));
 
     // --- F6: a pre-set inline overflow survives teardown verbatim -----------
     const styleEnv = makeEnv();
@@ -1914,15 +1919,15 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     eq('still visible after the artwork resolves (warm-cache path)',
         hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
     // The timeline's own zero is the moment the artwork resolved, so segment 3
-    // is reached 2050 ms later and segment 4 at 3200 ms.
-    at(visEnv, 2050);
+    // is reached 3075 ms later and segment 4 at 41200 ms.
+    at(visEnv, 3075);
     eq('visible at segment 3', hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
     eq('the phase has reached 3', inShadow(visEnv.doc, '.stage').getAttribute('data-phase'), '3');
-    at(visEnv, 3200);
+    at(visEnv, 4800);
     eq('visible at segment 4', hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'visible');
     eq('the phase has reached 4', inShadow(visEnv.doc, '.stage').getAttribute('data-phase'), '4');
     visEnv.doc.dispatchEvent({ type: 'click', target: visEnv.doc.body });
-    eq('a skip rewrites the host state', hostsIn(visEnv.doc)[0].getAttribute('data-state'), 'fade-out');
+    eq('a skip removes the host in the event handler', hostsIn(visEnv.doc).length, 0);
     visEnv.clock.tick(150);
     eq('the skipped stage is gone', visBoot.state, 'skipped');
     eq('the skipped stage left no host', hostsIn(visEnv.doc).length, 0);
@@ -1947,37 +1952,15 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     // width + gap`, capped by the stage width), so the assertion reads the two
     // custom properties the stage really sets rather than re-deriving an old
     // formula of its own.
-    const rightSpriteWidth = (h) => 0.92 * h * 0.5259;
-    const rightMaidLeftEdge = (w, h) => w - Math.max(8, Math.min(0.05 * w, 80)) - rightSpriteWidth(h);
-
     const wideEnv = makeEnv({ width: 1920, height: 1080 });
     const wideBoot = createBootShow({ document: wideEnv.doc, window: wideEnv.win, clock: wideEnv.clock });
     const wideStage = inShadow(wideEnv.doc, '.stage');
-    eq('1920x1080 has room for both maids and the title',
-        wideStage.getAttribute('data-right'), '1');
+    eq('wide screens keep one mature protagonist', wideStage.getAttribute('data-right'), '0');
     const wideLeft = parseFloat(wideStage.style.getPropertyValue('--wm-title-left'));
     const wideMax = parseFloat(wideStage.style.getPropertyValue('--wm-title-max'));
-    const wideAvail = parseFloat(wideStage.style.getPropertyValue('--wm-title-avail'));
-    const wideRightEdge = rightMaidLeftEdge(1920, 1080);
-    // The painted box is bounded by both the CSS `min(40vw, --wm-title-max)` and
-    // the `--wm-title-avail` cap, so the smaller of the two is what is drawn.
-    const painted = Math.min(0.4 * 1920, wideMax, wideAvail);
-    // Where the two sprites really sit, from the same geometry the client uses:
-    // left edge `clamp(8px,6%,96px)` + 96%H * 1122/2019, right edge
-    // `W - clamp(8px,5%,80px) - 92%H * 1077/2048`.
-    const leftSpriteRightEdge = (w, h) => Math.max(8, Math.min(0.06 * w, 96)) + 0.96 * h * (1122 / 2019);
-    const wideLeftSpriteEnd = leftSpriteRightEdge(1920, 1080);
-    check('the stage publishes a reserved title box',
-        wideLeft > 0 && wideMax > 0, wideLeft + ' / ' + wideMax);
-    check('the reserved title box starts just right of the left sprite',
-        wideLeft >= wideLeftSpriteEnd + 31 && wideLeft <= wideLeftSpriteEnd + 33,
-        'title starts at ' + wideLeft + ', left sprite ends at ' + wideLeftSpriteEnd);
-    check('the painted title box stays clear of the right maid',
-        wideLeft + painted <= wideRightEdge + 1,
-        'title ends at ' + (wideLeft + painted) + ', right maid starts at ' + wideRightEdge
-        + ', left sprite ends at ' + wideLeftSpriteEnd);
-    check('the title box stays inside the viewport',
-        wideLeft + painted <= 1920, 'title ends at ' + (wideLeft + painted));
+    check('title clears the full new portrait width', wideLeft >= 96 + .96 * 1080 * BOOT_ASSETS['maid-left'].ratio + 32);
+    check('title remains inside the viewport', wideLeft + wideMax <= 1920);
+    check('title retains a readable width', wideMax >= 320);
     wideBoot.dispose();
 
     const tightEnv = makeEnv({ width: 1440, height: 900 });
@@ -1992,6 +1975,38 @@ section('18. reduced motion, exact cap, fade-out, overflow restoration');
     check('with the right maid gone there is nothing for the title to overlap',
         tightStage.getAttribute('data-right') === '0');
     tightBoot.dispose();
+}
+
+// ---------------------------------------------------------------------------
+// 19. actual layer coverage, terminal handshake and synchronous cleanup
+// ---------------------------------------------------------------------------
+
+section('19. layer positioning contract and first-frame skip regression');
+{
+    const env = makeEnv();
+    let ended = false;
+    env.win.__dshWhaleMaidBoot = { state: () => ({ ended }), end: () => { ended = true; } };
+    const boot = createBootShow({ document: env.doc, window: env.win, clock: env.clock });
+    for (const className of ['.wm-palace', '.wm-backdrop', '.wm-curtain', '.wm-title']) {
+        check(className + ' participates in the full-stage positioning selector', inShadow(env.doc, className).hasAttribute('data-layer'));
+    }
+    const sceneCss = inShadow(env.doc, 'style').textContent;
+    const zIndex = selector => Number(sceneCss.match(new RegExp('\\' + selector + '\\{[^}]*?z-index:(\\d+)'))?.[1]);
+    check('chibi has an explicit stacking level above the palace background', zIndex('.wm-chibi') > zIndex('.wm-palace'));
+    check('chibi stays below the title and curtain', zIndex('.wm-chibi') < zIndex('.wm-title') && zIndex('.wm-chibi') < zIndex('.wm-curtain'));
+    check('title inner box retains independent geometry', !inShadow(env.doc, '.wm-title-inner').hasAttribute('data-layer'));
+    const pendingBeforeSkip = env.clock.pending;
+    env.doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+    eq('Escape reaches a terminal state without running a timer', boot.state, 'skipped');
+    eq('Escape leaves no mounted curtain before returning', hostsIn(env.doc).length, 0);
+    eq('Escape cancels every previously scheduled timer', env.clock.pending, 0);
+    check('the regression really skipped pending work', pendingBeforeSkip > 0);
+    eq('a late client activation cannot resurrect a skipped first frame', createBootShow({ document: env.doc, window: env.win, clock: env.clock }), null);
+    eq('late activation still leaves no curtain', hostsIn(env.doc).length, 0);
+    eq('late activation schedules no work', env.clock.pending, 0);
+    eq('skip removes the document click listener immediately', env.doc.listenerCount('click'), 0);
+    eq('skip removes the document key listener immediately', env.doc.listenerCount('keydown'), 0);
+    eq('skip removes the window key listener immediately', env.win.listenerCount('keydown'), 0);
 }
 
 // ---------------------------------------------------------------------------

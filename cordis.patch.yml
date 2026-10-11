@@ -1,4 +1,4 @@
-# Bundle patch for dsh-plugin-boot-whale-maid.
+# Bundle patch for dsh-boot.
 #
 # A bundle patch is a top-level YAML array of loader patch entries. `insert`
 # mounts one plugin row into the composed profile tree; `name` must be exactly
@@ -22,15 +22,15 @@
 #
 # Install into a profile:
 #
-#   dsh plugin --profile desktop add dsh-plugin-boot-whale-maid
-#   dsh plugin --profile desktop add ./dsh-plugin-boot-whale-maid   # local path
+#   dsh plugin --profile desktop add dsh-boot
+#   dsh plugin --profile desktop add ./dsh-boot   # local path
 #
 # This file is the artifact the three-way collision note in lib/index.js refers
 # to: it must NOT be installed alongside dsh-550c-boot without picking a winner,
 # which is why the injected script yields to 550c's marker in both directions.
 #
 # `id` is the row identity in the loader tree; keep it equal to the package name
-# so a `- id: dsh-plugin-boot-whale-maid` override always targets this row.
+# so a `- id: dsh-boot` override always targets this row.
 - insert:
-    - id: dsh-plugin-boot-whale-maid
-      name: 'dsh-plugin-boot-whale-maid'
+    - id: dsh-boot
+      name: 'dsh-boot'

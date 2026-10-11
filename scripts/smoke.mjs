@@ -1,5 +1,5 @@
 /**
- * Offline contract check for dsh-plugin-boot-whale-maid.
+ * Offline contract check for dsh-boot.
  *
  * It answers the two questions that decide whether this plugin installs and
  * mounts at all — without booting the Harness and without a browser:
@@ -17,6 +17,7 @@
  * Run: node scripts/smoke.mjs        (exit code 0 = all checks passed)
  */
 import { existsSync, statSync } from 'node:fs';
+import { Script, createContext } from 'node:vm';
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,18 +72,19 @@ check(notOptional.length === 0,
 // than something an `import` statement names, so they are exempt and checked by
 // the optional-peer rule above.
 const RUNTIME_PROVIDED_PEERS = new Set(['react', 'react-dom', '@deepseek-ai/cordis']);
-const sourceFiles = ['lib/index.js', 'lib/client.js'];
+const sourceFiles = ['lib/index.js', 'lib/client.js', 'lib/artwork.js'];
 const sources = await Promise.all(sourceFiles.map(f => readFile(join(root, f), 'utf8')));
 const importSpecifiers = [...sources.join('\n').matchAll(/^\s*import\s[^'"]*['"]([^'"]+)['"]/gm)]
     .map(m => m[1]);
+const resolvedSpecifiers = [...sources.join('\n').matchAll(/require\.resolve\(['"]([^'"]+)['"]\)/g)].map(m => m[1]);
 const unimportedClientPeers = peers.filter(name =>
     !RUNTIME_PROVIDED_PEERS.has(name)
-    && !importSpecifiers.some(spec => spec === name || spec.startsWith(`${name}/`)));
+    && ![...importSpecifiers, ...resolvedSpecifiers].some(spec => spec === name || spec.startsWith(`${name}/`)));
 check(unimportedClientPeers.length === 0,
-    'no client-library peerDependency is declared that the sources never import',
+    'every non-runtime peer is imported or resolved by the plugin',
     unimportedClientPeers.length === 0 ? '' : `imported by nothing: ${unimportedClientPeers.join(', ')}`);
-check(importSpecifiers.length === 0,
-    'both halves are dependency-free (no import statements at all)',
+check(importSpecifiers.every(spec => spec.startsWith('node:') || spec.startsWith('./') || spec === '../assets/manifest.json'),
+    'host imports only built-ins and its own artwork route; no third-party dependency',
     importSpecifiers.length === 0 ? '' : `imports: ${importSpecifiers.join(', ')}`);
 
 // --- 2) Asset table: the shipped values against the recorded audit -----------
@@ -92,7 +94,7 @@ check(importSpecifiers.length === 0,
 // field by field instead of by substring: a wrong hash, a swapped width or a
 // silently re-enabled `used` flag fails here rather than at runtime.
 const audit = JSON.parse(await readFile(join(root, 'docs/assets.json'), 'utf8'));
-const clientModule = await import(new URL(`../${clientEntry}`, import.meta.url).href);
+const clientModule = await import(new URL('../lib/client.js', import.meta.url).href);
 const bootAssets = clientModule.BOOT_ASSETS;
 const auditKeys = Object.keys(audit);
 const assetKeys = Object.keys(bootAssets ?? {});
@@ -128,10 +130,10 @@ check(unusedRoles.length === 1 && unusedRoles[0] === 'vision',
     `unused=[${unusedRoles.join(', ')}]`);
 
 // Same-origin route only: no local paths, no CDN, no inlined bytes.
-const routePattern = new RegExp('^/skin-assets/maid-atelier/[0-9a-f]{64}\\.webp$');
+const routePattern = /^(?:\/boot-assets\/whale-maid\/[0-9a-f]{64}\.png|\/boot-assets\/whale-maid\/[0-9a-f]{64}\.webp)$/;
 const badUrls = assetKeys.filter(key => !routePattern.test(String(bootAssets[key].url)));
 check(badUrls.length === 0,
-    'every asset url is a same-origin /skin-assets/maid-atelier/<64-hex>.webp route',
+    'every asset url is a same-origin /boot-assets/whale-maid/<64-hex>.png route',
     badUrls.length === 0 ? '' : badUrls.map(k => `${k}=${bootAssets[k].url}`).join(', '));
 check(assetKeys.every(key => bootAssets[key].url.includes(bootAssets[key].hash)),
     'each asset url embeds its own hash (no cross-wired entries)');
@@ -141,23 +143,23 @@ check(assetKeys.every(key => bootAssets[key].url.includes(bootAssets[key].hash))
 // its absolute times are pinned: 0.0 / 0.5 / 1.8 / 2.05 / 3.2 / 4.4 / 5.6 / 6.4 s.
 const segments = clientModule.BOOT_SEGMENTS;
 check(Array.isArray(segments) && segments.length === 8, `BOOT_SEGMENTS has 8 segments (${segments?.length})`);
-const expectedAt = [0, 500, 1800, 2050, 3200, 4400, 5600, 6400];
+const expectedAt = [0, 750, 2700, 3075, 4800, 6600, 8400, 9600];
 check(JSON.stringify(segments?.map(s => s.at)) === JSON.stringify(expectedAt),
     'segment start times match the documented timeline',
     `at=${JSON.stringify(segments?.map(s => s.at))}`);
 check(segments.every(s => typeof s.id === 'string' && s.id !== '' && s.end >= s.at),
     'every segment has a non-empty id and a non-inverted interval');
-check(segments[segments.length - 1].end === 6400,
-    `the show ends at 6400 ms (${segments[segments.length - 1].end})`);
-check(segments[3].at - segments[2].at === 250,
-    'the right maid enters exactly 250 ms after the main sprite',
+check(segments[segments.length - 1].end === 9600,
+    `the show ends at 9600 ms (${segments[segments.length - 1].end})`);
+check(segments[3].at - segments[2].at === 375,
+    'the right maid enters exactly 375 ms after the main sprite',
     `delta=${segments[3].at - segments[2].at} ms`);
 
 const stage = clientModule.STAGE_CONFIG;
-check(stage.skipFadeMs > 0 && stage.skipFadeMs < 150,
+check(stage.skipFadeMs === 0,
     `skip budget stays under the 150 ms requirement (${stage.skipFadeMs} ms)`);
 // 0.96 * 0.5557 + 0.92 * 0.5259 = 1.0173 — the side-by-side width budget.
-check(stage.twoMaidWidthFactor === 1.0173 && stage.twoMaidGapPx === 32,
+check(Math.abs(stage.twoMaidWidthFactor - 1.88 * bootAssets['maid-left'].ratio) < 1e-9 && stage.twoMaidGapPx === 32,
     'the two-maid width budget matches the intrinsic-ratio sum plus its gap',
     `${stage.twoMaidWidthFactor} + ${stage.twoMaidGapPx}px`);
 check(stage.maidLeftHeight === '0.96' && stage.maidRightHeight === '0.92' && stage.chibiHeight === '0.15',
@@ -266,13 +268,20 @@ for (const [needle, why] of [
 ]) {
     check(scriptJs.includes(needle), `injected script references ${needle} — ${why}`);
 }
-check(/setTimeout\([\s\S]*?8000/.test(scriptJs) || scriptJs.includes('8000'),
-    'injected script arms an 8000 ms unconditional backstop');
+check(/setTimeout\([\s\S]*?14000/.test(scriptJs) || scriptJs.includes('14000'),
+    'injected script arms an 14000 ms unconditional backstop');
 check(scriptJs.trimStart().startsWith('(function(){try{') && scriptJs.includes('catch(error)'),
     'injected script body is wrapped in try/catch (an exception cannot break boot)');
 
 // --- 7) Client half tolerates a service-less context ------------------------
-const client = await import(new URL(`../${clientEntry}`, import.meta.url).href);
+const clientRegistrations = [];
+const clientSandbox = createContext({ window: { __ModuleLoader__: {
+    load(registration) { clientRegistrations.push(registration); },
+} } });
+new Script(await readFile(join(root, clientEntry), 'utf8')).runInContext(clientSandbox);
+check(clientRegistrations.length === 1, 'client classic script registers exactly one factory');
+check(clientRegistrations[0]?.id === pkg.name, 'client registration id matches the package name');
+const client = clientRegistrations[0].factory(() => { throw new Error('Unexpected dependency'); });
 check(typeof client.apply === 'function', 'client entry exports apply()');
 check(Array.isArray(client.inject), 'client entry exports an inject array');
 check(JSON.stringify(client.inject) === JSON.stringify(inject),
@@ -280,8 +289,8 @@ check(JSON.stringify(client.inject) === JSON.stringify(inject),
     `entry=${JSON.stringify(client.inject)} manifest=${JSON.stringify(inject)}`);
 
 // No browser here: `ctx.effect` is absent so `apply` returns its no-op handle.
-// What matters offline is that mounting in an incomplete runtime is survivable,
-// and that the module can be imported in Node at all (no top-level DOM access).
+// The browser entry must register as a classic script; its factory must tolerate
+// mounting in an incomplete runtime. ESM source validation happens separately.
 const clientCtx = { logger: { info: () => undefined, warn: () => undefined } };
 let clientThrew = null;
 let handle = null;
@@ -304,80 +313,15 @@ check(clientCtxWithEffect.state.effects.length === 1,
 check(clientCtxWithEffect.state.effects.every(e => typeof e.dispose === 'function'),
     'the client registration is disposable (no stage survives an unload)');
 
-// --- 8) Licence consistency across the three declarations -------------------
-// The package ships two kinds of content under two licences: CODE under MIT and
-// third-party ARTWORK under CC BY-NC-SA 4.0. `package.json` carries one SPDX
-// expression for the distribution, `LICENSE` splits the two, and the README
-// restates both for humans. A value check, not a presence check: each
-// declaration is inspected and then cross-compared, so the three cannot drift
-// apart (a bare `CC-BY-NC-SA-4.0` field, which labels code as artwork, fails).
-const MIT_SPDX = 'MIT';
-const ARTWORK_SPDX = 'CC-BY-NC-SA-4.0';
-// Full permission grant and the warranty disclaimer: the substance of MIT,
-// not just its name, has to be present for the code licence to mean anything.
-const MIT_GRANT = 'Permission is hereby granted, free of charge, to any person obtaining a copy';
-const MIT_WARRANTY = 'WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED';
-
-const licenceField = String(pkg.license ?? '');
+// --- 8) License scope and artwork attribution -------------------------------
 const licenceText = await readFile(join(root, 'LICENSE'), 'utf8');
 const readmeText = await readFile(join(root, 'README.md'), 'utf8');
-
-// The MIT body is checked against a whitespace-collapsed copy of the file: the
-// canonical text wraps mid-phrase ("EXPRESS OR\nIMPLIED"), so a raw substring
-// test would reject a perfectly valid licence that merely got re-wrapped.
-const collapse = (text) => text.replace(/\s+/g, ' ');
-const licenceFlat = collapse(licenceText);
-
-check(licenceField !== '', `package.json declares a license field (${licenceField})`);
-
-// SPDX shape: identifiers joined by AND/OR/WITH, optionally parenthesised. A
-// bare identifier and an expression are both valid; anything else is a typo.
-const SPDX_TOKEN = /^(?:\(|\)|AND|OR|WITH|[A-Za-z0-9.+-]+)$/;
-const spdxTokens = licenceField.split(/\s+/).filter(token => token !== '');
-check(spdxTokens.length > 0 && spdxTokens.every(token => SPDX_TOKEN.test(token)),
-    'the license field is a syntactically well-formed SPDX expression',
-    licenceField);
-
-// Case-insensitive match on the identifier itself: SPDX ids are matched
-// case-insensitively, so the deprecated `CC-BY-NC-SA-4.0+` form still trips the
-// "or later" assertion below while a differently-cased valid id does not.
-const hasArtworkId = /cc-by-nc-sa-4\.0/i.test(licenceField);
-const hasMitId = /(^|[^a-z0-9.+-])mit([^a-z0-9.+-]|$)/i.test(licenceField);
-check(hasArtworkId && hasMitId,
-    'the license field declares BOTH the code licence (MIT) and the artwork licence (CC-BY-NC-SA-4.0)',
-    licenceField);
-check(!spdxTokens.includes('AND') || (hasMitId && hasArtworkId),
-    'uses AND only to join the two real licences — each applies to its own content',
-    spdxTokens.includes('AND') ? 'AND between MIT and CC-BY-NC-SA-4.0' : 'single identifier');
-check(!/CC-BY-NC-SA-4\.0\+/i.test(licenceField),
-    'the artwork id is not the deprecated "+" (or-later) form',
-    licenceField);
-
-check(licenceFlat.includes(MIT_GRANT) && licenceFlat.includes(MIT_WARRANTY),
-    'LICENSE carries the substantive MIT text (grant + warranty disclaimer)');
-check(/SOFTWARE \/ CODE — MIT/.test(licenceText) && /ARTWORK — CC BY-NC-SA 4\.0/.test(licenceText),
-    'LICENSE keeps the two-layer split: a code/MIT section and an artwork/CC BY-NC-SA 4.0 section');
-check(/Applies to:[\s\S]{0,240}?\bMIT\b/.test(licenceText) || /CODE — MIT/.test(licenceText),
-    'LICENSE §1 states that the MIT grant covers the code');
-
-// The three declarations must agree: the field names the code licence that
-// LICENSE actually grants, and the artwork id that LICENSE §2 actually uses.
-check(hasMitId === /MIT/.test(licenceText),
-    'the license field and LICENSE agree on whether MIT applies to this package');
-check(hasArtworkId === /CC BY-NC-SA 4\.0/.test(licenceText),
-    'the license field and LICENSE agree on the artwork licence id');
-
-// README claims. If it asserts MIT for the package code, the LICENSE must back
-// it; and naming MIT alone would under-report the artwork terms, so both
-// licences have to be declared together.
-const readmeClaimsMit = /\bMIT\b/.test(readmeText);
-const readmeClaimsArtwork = /CC BY-NC-SA 4\.0/.test(readmeText);
-check(readmeClaimsMit, 'README declares the code licence (MIT)');
-check(readmeClaimsArtwork, 'README declares the artwork licence (CC BY-NC-SA 4.0)');
-check(readmeClaimsMit === licenceText.includes('MIT'),
-    'the README MIT claim is backed by the LICENSE text (no claim without an actual grant)');
-check(readmeText.includes('LICENSE') && readmeText.includes('docs/ATTRIBUTION.md'),
-    'README points readers at both LICENSE and docs/ATTRIBUTION.md');
+const flat = licenceText.replace(/\s+/g, ' ');
+check(pkg.license === 'SEE LICENSE IN LICENSE', 'package refers to its layered LICENSE');
+check(flat.includes('Permission is hereby granted, free of charge') && flat.includes('WITHOUT WARRANTY OF ANY KIND'), 'code retains the MIT grant and disclaimer');
+check(licenceText.includes('AI-generated') && licenceText.includes('CC BY-NC-SA 4.0'), 'generated assets and referenced upstream chibi have separate scope');
+check(readmeText.includes('9.6') && readmeText.includes('2.6'), 'README documents full and reduced-motion durations');
+check(readmeText.includes('LICENSE') && readmeText.includes('docs/ATTRIBUTION.md'), 'README points to license and attribution');
 
 // --- Report ------------------------------------------------------------------
 let failed = 0;

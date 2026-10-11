@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>深海女仆工坊 · 出场动画预览 — dsh-plugin-boot-whale-maid</title>
+<title>深度求索 · 出场动画预览 — dsh-boot</title>
 <style>
     :root {
         --ink: #f2ece0;
@@ -55,15 +55,15 @@
 </head>
 <body>
 <div class="wrap">
-    <h1>深海女仆工坊 · DSH 开屏出场动画预览</h1>
-    <p class="note">dsh-plugin-boot-whale-maid / scripts/preview.html —— 本页只做动画与构图检查，不安装任何插件。</p>
+    <h1>深度求索 · DSH 开屏出场动画预览</h1>
+    <p class="note">dsh-boot / scripts/preview.html —— 本页只做动画与构图检查，不安装任何插件。</p>
 
     <div class="banner">
         <strong>【动作预览，非真实立绘效果】</strong>
         独立动作预览用的是本插件自制的 SVG 占位图形，只表达主立绘、Q 版与宫殿的
         <em>体量与位置</em>，因此能看完整构图、幕布、标题、灯光、时间线与跳过行为，
         <strong>看不到真实立绘</strong>。真实素材必须在实际提供
-        <code>/skin-assets/maid-atelier/</code> 的同源环境（已启用 maid-atelier 皮肤插件的 DSH）里验收。
+        <code>/boot-assets/whale-maid/</code> 的同源环境（已启用 maid-atelier 皮肤插件的 DSH）里验收。
     </div>
 
     <div class="panel">
@@ -81,12 +81,12 @@
             <p class="note">本模式<strong>不发任何图片请求</strong>：占位图形以 <code>data:</code> URI 内联，绝不复制、也绝不重新托管原包素材。
             需要浏览器允许以 <code>file://</code> 读取同目录脚本；若被策略拦下，请用任意本地静态服务器打开本文件
             （静态服务器只提供本页与 <code>lib/client.js</code>，它<strong>不会</strong>让
-            <code>/skin-assets/maid-atelier/</code> 存在）。</p>
+            <code>/boot-assets/whale-maid/</code> 存在）。</p>
         </div>
         <div class="card">
             <h3>模式 2 · 真实素材验收</h3>
             <p>只有在真正提供该素材路由的同源环境里才有意义，例如已安装并启用 maid-atelier 皮肤插件的 DSH：
-            打开 <code>http://127.0.0.1:19387/skin-assets/maid-atelier/&lt;hash&gt;.webp</code> 应返回图片。</p>
+            打开 <code>http://127.0.0.1:19387/boot-assets/whale-maid/&lt;hash&gt;.png</code> 应返回图片。</p>
             <p class="note">普通静态服务器不等于素材路由存在。仅当路由返回 404 时，动画进入 ≤1s 的降级幕 —— 这是预期分支，不是错误。</p>
         </div>
     </div>
